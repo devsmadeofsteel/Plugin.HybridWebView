@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 using System.Threading.Tasks;
 using Plugin.HybridWebView.Shared.Delegates;
@@ -25,6 +26,12 @@ namespace Plugin.HybridWebView.Shared
         /// </summary>
         public delegate Task ClearCookiesRequestDelegate();
 
+        public delegate Task<string> GetAllCookiesDelegate();
+
+        public delegate Task<string> GetCookieValueDelegate(string cookieName);
+
+        public delegate Task SetCookieValueDelegate(string cookieName, string cookieValue, long? duration = null);
+
         /// <summary>
         /// Fired when navigation begins, for example when the source is set.
         /// </summary>
@@ -47,6 +54,12 @@ namespace Plugin.HybridWebView.Shared
         public event EventHandler OnContentLoaded;
 
         internal event EventHandler OnBackRequested;
+
+        internal event GetAllCookiesDelegate OnGetAllCookiesRequested;
+
+        internal event GetCookieValueDelegate OnGetCookieValueRequested;
+
+        internal event SetCookieValueDelegate OnSetCookieValueRequested;
 
         internal event EventHandler OnForwardRequested;
 
@@ -185,6 +198,38 @@ namespace Plugin.HybridWebView.Shared
             if (OnClearCookiesRequested != null)
                 await OnClearCookiesRequested.Invoke();
         }
+
+        /// <summary>
+        /// Getting all cookies from the current domain from shared storage
+        /// </summary>
+        public async Task<string> GetAllCookiesValueAsync()
+        {
+            if (OnGetAllCookiesRequested != null)
+                return await OnGetAllCookiesRequested.Invoke();
+            return string.Empty;
+        }
+
+        /// <summary>
+        /// Getting a cookie value by cookiename.
+        /// </summary>
+        public async Task<string> GetCookieValueAsync(string cookieName)
+        {
+            if (string.IsNullOrWhiteSpace(cookieName)) return string.Empty;
+            if (OnGetCookieValueRequested != null)
+                return await OnGetCookieValueRequested.Invoke(cookieName);
+            return string.Empty;
+        }
+
+        /// <summary>
+        /// Setting a cookies value by cookiename.
+        /// </summary>
+        public async Task SetCookieValueAsync(string cookieName, string cookieValue, long? duration = null)
+        {
+            if (string.IsNullOrWhiteSpace(cookieName)) return;
+            if (OnSetCookieValueRequested != null)
+                await OnSetCookieValueRequested.Invoke(cookieName, cookieValue, duration);
+        }
+
 
         /// <summary>
         /// Inject some javascript, returning a string result if the resulting Javascript resolves to a string on the DOM.

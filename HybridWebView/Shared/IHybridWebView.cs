@@ -45,5 +45,8 @@ namespace Plugin.HybridWebView.Shared
 
         void RemoveAllLocalCallbacks();
         Task ClearCookiesAsync();
+        Task<string> GetAllCookiesValueAsync();
+        Task<string> GetCookieValueAsync(string cookieName);
+        Task SetCookieValueAsync(string cookieName, string cookieValue, long? duration = null);
     }
 }

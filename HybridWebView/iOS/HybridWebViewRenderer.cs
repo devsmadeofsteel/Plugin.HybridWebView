@@ -19,8 +19,6 @@ namespace Plugin.HybridWebView.iOS
     /// </summary>
     public class HybridWebViewRenderer : ViewRenderer<Shared.HybridWebViewControl, WKWebView>, IWKScriptMessageHandler, IWKUIDelegate
     {
-
-
         public static event EventHandler<WKWebView> OnControlChanged;
 
         public static string BaseUrl { get; set; } = NSBundle.MainBundle.BundlePath;
@@ -51,9 +49,14 @@ namespace Plugin.HybridWebView.iOS
 
         void SetupElement(Shared.HybridWebViewControl element)
         {
+            NSHttpCookieStorage.SharedStorage.AcceptPolicy = NSHttpCookieAcceptPolicy.Always;
+
             element.PropertyChanged += OnPropertyChanged;
             element.OnJavascriptInjectionRequest += OnJavascriptInjectionRequest;
             element.OnClearCookiesRequested += OnClearCookiesRequest;
+            element.OnGetAllCookiesRequested += OnGetAllCookiesRequest;
+            element.OnGetCookieValueRequested += OnGetCookieRequest;
+            element.OnSetCookieValueRequested += OnSetCookieRequest;
             element.OnBackRequested += OnBackRequested;
             element.OnForwardRequested += OnForwardRequested;
             element.OnRefreshRequested += OnRefreshRequested;
@@ -66,6 +69,9 @@ namespace Plugin.HybridWebView.iOS
             element.PropertyChanged -= OnPropertyChanged;
             element.OnJavascriptInjectionRequest -= OnJavascriptInjectionRequest;
             element.OnClearCookiesRequested -= OnClearCookiesRequest;
+            element.OnGetAllCookiesRequested -= OnGetAllCookiesRequest;
+            element.OnGetCookieValueRequested -= OnGetCookieRequest;
+            element.OnSetCookieValueRequested -= OnSetCookieRequest;
             element.OnBackRequested -= OnBackRequested;
             element.OnForwardRequested -= OnForwardRequested;
             element.OnRefreshRequested -= OnRefreshRequested;
@@ -126,6 +132,119 @@ namespace Plugin.HybridWebView.iOS
                 await store.DeleteCookieAsync(c);
             }
 
+            /* Delete shared-storage for url also */
+
+            var url = new Uri(Element.Source);
+            NSHttpCookie[] sharedCookies = NSHttpCookieStorage.SharedStorage.CookiesForUrl(url);
+            foreach (NSHttpCookie c in sharedCookies)
+            {
+                NSHttpCookieStorage.SharedStorage.DeleteCookie(c);
+            }
+        }
+
+        /* 
+         * Sets cookievalue based on cookiename. 
+         * If duration is set to 0 or less, the cookie is deleted.
+         * If duration isn't specified, the cookie is marked as sessioncookie. 
+        */
+
+        private Task OnSetCookieRequest(string cookieName, string cookieValue, long? duration = null)
+        {
+            return Task.Run(() =>
+            {
+                try
+                {
+                    var url = new Uri(Element.Source);
+                    var domain = url.Host;
+
+                    NSHttpCookie[] sharedCookies = NSHttpCookieStorage.SharedStorage.CookiesForUrl(url);
+
+                    var cookieDictionary = new NSMutableDictionary();
+                    cookieDictionary.Add(NSHttpCookie.KeyName, new NSString(cookieName));
+                    cookieDictionary.Add(NSHttpCookie.KeyValue, new NSString(cookieValue));
+                    cookieDictionary.Add(NSHttpCookie.KeyDomain, new NSString(domain));
+                    cookieDictionary.Add(NSHttpCookie.KeyPath, new NSString(url.AbsolutePath));
+                    if (url.Scheme == "https")
+                    {
+                        cookieDictionary.Add(NSHttpCookie.KeySecure, new NSString("true"));
+                    }
+                    else
+                    {
+                        cookieDictionary.Add(NSHttpCookie.KeySecure, new NSString("false"));
+                    }
+
+                    if (duration != null)
+                    {
+                        double _duration = (long) duration;
+                        cookieDictionary.Add(NSHttpCookie.KeyExpires, (NSDate) DateTime.Now.AddSeconds(_duration));
+                    }
+
+                    var newCookie = new NSHttpCookie(cookieDictionary);
+
+                    NSHttpCookieStorage.SharedStorage.SetCookie(newCookie);
+                }
+                catch (Exception)
+                {
+                }
+            });
+        }
+
+        /* gets all cookies on current page */
+        private async Task<string> OnGetAllCookiesRequest()
+        {
+            if (Control == null || Element == null)
+            {
+                return string.Empty;
+            }
+            var cookieCollection = string.Empty;
+            var url = new Uri(Element.Source);
+
+            NSHttpCookie[] sharedCookies = NSHttpCookieStorage.SharedStorage.CookiesForUrl(url);
+            foreach (NSHttpCookie c in sharedCookies)
+            {
+                cookieCollection += c.Name + "=" + c.Value + "; ";
+            }
+
+            var store = _configuration.WebsiteDataStore.HttpCookieStore;
+
+            var cookies = await store.GetAllCookiesAsync();
+            foreach (var c in cookies)
+            {
+                cookieCollection += c.Name + "=" + c.Value + "; ";
+            }
+            if (cookieCollection.Length > 0)
+            {
+                cookieCollection = cookieCollection.Remove(cookieCollection.Length - 2);
+            }
+            return cookieCollection;
+        }
+
+        /* gets cookie based on cookiekey */
+
+        private async Task<string> OnGetCookieRequest(string cookieName)
+        {
+            if (Control == null || Element == null) return string.Empty;
+            var url = new Uri(Element.Source);
+            var toReturn = string.Empty;
+            NSHttpCookie[] sharedCookies = NSHttpCookieStorage.SharedStorage.CookiesForUrl(url);
+            foreach (NSHttpCookie c in sharedCookies)
+            {
+                if (c.Name == cookieName)
+                {
+                    return c.Value;
+                }
+            }
+
+            var store = _configuration.WebsiteDataStore.HttpCookieStore;
+
+            var cookies = await store.GetAllCookiesAsync();
+            foreach (var c in cookies)
+            {
+                if (c.Name == cookieName)
+                    return c.Value;
+            }
+
+            return string.Empty;
         }
 
         internal async Task<string> OnJavascriptInjectionRequest(string js)

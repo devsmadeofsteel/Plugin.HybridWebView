@@ -12,48 +12,57 @@ namespace Plugin.HybridWebView.Shared
         /// <summary>
         /// A bindable property for the Navigating property.
         /// </summary>
-        public static readonly BindableProperty NavigatingProperty = BindableProperty.Create(nameof(Navigating), typeof(bool), typeof(HybridWebViewControl), false);
+        public static readonly BindableProperty NavigatingProperty =
+            BindableProperty.Create(nameof(Navigating), typeof(bool), typeof(HybridWebViewControl), false);
 
         /// <summary>
         /// A bindable property for the Source property.
         /// </summary>
-        public static readonly BindableProperty SourceProperty = BindableProperty.Create(nameof(Source), typeof(string), typeof(HybridWebViewControl));
+        public static readonly BindableProperty SourceProperty =
+            BindableProperty.Create(nameof(Source), typeof(string), typeof(HybridWebViewControl));
 
         /// <summary>
         /// A bindable property for the ContentType property.
         /// </summary>
-        public static readonly BindableProperty ContentTypeProperty = BindableProperty.Create(nameof(ContentType), typeof(WebViewContentType), typeof(HybridWebViewControl), WebViewContentType.Internet);
+        public static readonly BindableProperty ContentTypeProperty = BindableProperty.Create(nameof(ContentType),
+            typeof(WebViewContentType), typeof(HybridWebViewControl), WebViewContentType.Internet);
 
         /// <summary>
         /// A bindable property for the BaseUrl property.
         /// </summary>
-        public static readonly BindableProperty BaseUrlProperty = BindableProperty.Create(nameof(BaseUrl), typeof(string), typeof(HybridWebViewControl));
+        public static readonly BindableProperty BaseUrlProperty =
+            BindableProperty.Create(nameof(BaseUrl), typeof(string), typeof(HybridWebViewControl));
 
         /// <summary>
         /// A bindable property for the CanGoBack property.
         /// </summary>
-        public static readonly BindableProperty CanGoBackProperty = BindableProperty.Create(nameof(CanGoBack), typeof(bool), typeof(HybridWebViewControl), false);
+        public static readonly BindableProperty CanGoBackProperty =
+            BindableProperty.Create(nameof(CanGoBack), typeof(bool), typeof(HybridWebViewControl), false);
 
         /// <summary>
         /// A bindable property for the CanGoForward property.
         /// </summary>
-        public static readonly BindableProperty CanGoForwardProperty = BindableProperty.Create(nameof(CanGoForward), typeof(bool), typeof(HybridWebViewControl), false);
+        public static readonly BindableProperty CanGoForwardProperty =
+            BindableProperty.Create(nameof(CanGoForward), typeof(bool), typeof(HybridWebViewControl), false);
 
         /// <summary>
         /// A bindable property for the EnableGlobalCallbacks property.
         /// </summary>
-        public static readonly BindableProperty EnableGlobalCallbacksProperty = BindableProperty.Create(nameof(EnableGlobalCallbacks), typeof(bool), typeof(HybridWebViewControl), true);
+        public static readonly BindableProperty EnableGlobalCallbacksProperty =
+            BindableProperty.Create(nameof(EnableGlobalCallbacks), typeof(bool), typeof(HybridWebViewControl), true);
 
         /// <summary>
         /// A bindable property for the EnableGlobalHeaders property.
         /// </summary>
-        public static readonly BindableProperty EnableGlobalHeadersProperty = BindableProperty.Create(nameof(EnableGlobalHeaders), typeof(bool), typeof(HybridWebViewControl), true);
+        public static readonly BindableProperty EnableGlobalHeadersProperty =
+            BindableProperty.Create(nameof(EnableGlobalHeaders), typeof(bool), typeof(HybridWebViewControl), true);
 
 
         /// <summary>
         /// A bindable property for the ScalesPageToFit property.
         /// </summary>
-        public static readonly BindableProperty UseWideViewPortProperty = BindableProperty.Create(nameof(UseWideViewPort), typeof(bool), typeof(HybridWebViewControl), false);
+        public static readonly BindableProperty UseWideViewPortProperty =
+            BindableProperty.Create(nameof(UseWideViewPort), typeof(bool), typeof(HybridWebViewControl), false);
 
         /// <summary>
         /// A dictionary used to add headers which are used throughout all instances of FormsWebView.
