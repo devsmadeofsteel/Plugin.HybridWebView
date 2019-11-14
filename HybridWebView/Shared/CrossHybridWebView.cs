@@ -1,18 +1,18 @@
 ﻿using System;
 
-namespace Plugin.HybridWebView.netStandard
+namespace Plugin.HybridWebView.Shared
 {
     /// <summary>
     /// Cross HybridWebView
     /// </summary>
     public static class CrossHybridWebView
     {
-        static Lazy<IHybridWebView> implementation = new Lazy<IHybridWebView>(() => CreateHybridWebView(), System.Threading.LazyThreadSafetyMode.PublicationOnly);
+        static Lazy<IHybridWebView> _implementation = new Lazy<IHybridWebView>(() => CreateHybridWebView(), System.Threading.LazyThreadSafetyMode.PublicationOnly);
 
         /// <summary>
         /// Gets if the plugin is supported on the current platform.
         /// </summary>
-        public static bool IsSupported => implementation.Value == null ? false : true;
+        public static bool IsSupported => _implementation.Value == null ? false : true;
 
         /// <summary>
         /// Current plugin implementation to use
@@ -21,7 +21,7 @@ namespace Plugin.HybridWebView.netStandard
         {
             get
             {
-                IHybridWebView ret = implementation.Value;
+                IHybridWebView ret = _implementation.Value;
                 if (ret == null)
                 {
                     throw NotImplementedInReferenceAssembly();
@@ -36,7 +36,7 @@ namespace Plugin.HybridWebView.netStandard
             return null;
 #else
 #pragma warning disable IDE0022 // Use expression body for methods
-            return new HybridWebViewImplementation();
+            return new HybridWebViewControl();
 #pragma warning restore IDE0022 // Use expression body for methods
 #endif
         }

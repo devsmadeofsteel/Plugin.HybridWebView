@@ -57,7 +57,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="netStandard\**\*.cs" />
+    <Compile Include="Shared\**\*.cs" />
+    <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
+    <PackageReference Include="Xamarin.Forms" Version="2.4.0.280" />
   </ItemGroup>
 
   <ItemGroup Condition=" $(TargetFramework.StartsWith('netstandard')) ">
@@ -81,6 +83,11 @@
     <Compile Include="iOS\**\*.cs" />
   </ItemGroup>
 
+
+  <ItemGroup Condition=" $(TargetFramework.StartsWith('Xamarin.Mac')) ">
+    <Compile Include="MacOS\**\*.cs" />
+  </ItemGroup>
+
   <!--Additional item groups-->
   <!--
   <ItemGroup Condition=" $(TargetFramework.StartsWith('Xamarin.TVOS')) ">
@@ -93,9 +100,7 @@
   </ItemGroup>
 
 
-  <ItemGroup Condition=" $(TargetFramework.StartsWith('Xamarin.Mac')) ">
-    <Compile Include="**\*.mac.cs" />
-  </ItemGroup>
+
 
   
    <ItemGroup Condition=" $(TargetFramework.StartsWith('netcoreapp')) ">
