@@ -39,6 +39,8 @@ namespace Plugin.HybridWebView.Shared
             return new HybridWebViewControl();
 #pragma warning restore IDE0022 // Use expression body for methods
 #endif
+
+            //TODO: Implement all improvements from https://github.com/KristofferBerge/Xam.Plugin.Webview/blob/unofficial-release/Xam.Plugin.WebView.Abstractions/FormsWebView.Static.cs
         }
 
         internal static Exception NotImplementedInReferenceAssembly() =>
