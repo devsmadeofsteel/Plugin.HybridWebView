@@ -10,6 +10,7 @@ using WebKit;
 using Xamarin.Forms.Platform.iOS;
 using UIKit;
 using Xamarin.Forms;
+using System.Net;
 
 [assembly: ExportRenderer(typeof(HybridWebViewControl), typeof(HybridWebViewRenderer))]
 namespace Plugin.HybridWebView.iOS
@@ -17,7 +18,7 @@ namespace Plugin.HybridWebView.iOS
     /// <summary>
     /// Interface for HybridWebView
     /// </summary>
-    public class HybridWebViewRenderer : ViewRenderer<Shared.HybridWebViewControl, WKWebView>, IWKScriptMessageHandler, IWKUIDelegate
+    public class HybridWebViewRenderer : ViewRenderer<HybridWebViewControl, WKWebView>, IWKScriptMessageHandler, IWKUIDelegate
     {
         public static event EventHandler<WKWebView> OnControlChanged;
 
@@ -31,9 +32,11 @@ namespace Plugin.HybridWebView.iOS
 
         public static void Initialize()
         {
+            var dt = DateTime.Now;
+
         }
 
-        protected override void OnElementChanged(ElementChangedEventArgs<Shared.HybridWebViewControl> e)
+        protected override void OnElementChanged(ElementChangedEventArgs<HybridWebViewControl> e)
         {
             base.OnElementChanged(e);
 
@@ -47,34 +50,35 @@ namespace Plugin.HybridWebView.iOS
                 DestroyElement(e.OldElement);
         }
 
-        void SetupElement(Shared.HybridWebViewControl element)
+        void SetupElement(HybridWebViewControl element)
         {
             NSHttpCookieStorage.SharedStorage.AcceptPolicy = NSHttpCookieAcceptPolicy.Always;
-
             element.PropertyChanged += OnPropertyChanged;
             element.OnJavascriptInjectionRequest += OnJavascriptInjectionRequest;
             element.OnClearCookiesRequested += OnClearCookiesRequest;
-            element.OnGetAllCookiesRequested += OnGetAllCookiesRequest;
-            element.OnGetCookieValueRequested += OnGetCookieRequest;
-            element.OnSetCookieValueRequested += OnSetCookieRequest;
+            element.OnGetAllCookiesRequestedAsync += OnGetAllCookiesRequestAsync;
+            element.OnGetCookieRequestedAsync += OnGetCookieRequestAsync;
+            element.OnSetCookieRequestedAsync += OnSetCookieRequestAsync;
             element.OnBackRequested += OnBackRequested;
             element.OnForwardRequested += OnForwardRequested;
             element.OnRefreshRequested += OnRefreshRequested;
+            element.OnUserAgentChanged += SetUserAgent;
 
             SetSource();
         }
 
-        void DestroyElement(Shared.HybridWebViewControl element)
+        void DestroyElement(HybridWebViewControl element)
         {
             element.PropertyChanged -= OnPropertyChanged;
             element.OnJavascriptInjectionRequest -= OnJavascriptInjectionRequest;
             element.OnClearCookiesRequested -= OnClearCookiesRequest;
-            element.OnGetAllCookiesRequested -= OnGetAllCookiesRequest;
-            element.OnGetCookieValueRequested -= OnGetCookieRequest;
-            element.OnSetCookieValueRequested -= OnSetCookieRequest;
+            element.OnGetAllCookiesRequestedAsync += OnGetAllCookiesRequestAsync;
+            element.OnGetCookieRequestedAsync += OnGetCookieRequestAsync;
+            element.OnSetCookieRequestedAsync += OnSetCookieRequestAsync;
             element.OnBackRequested -= OnBackRequested;
             element.OnForwardRequested -= OnForwardRequested;
             element.OnRefreshRequested -= OnRefreshRequested;
+            element.OnUserAgentChanged -= SetUserAgent;
 
             element.Dispose();
         }
@@ -86,19 +90,23 @@ namespace Plugin.HybridWebView.iOS
             _contentController.AddScriptMessageHandler(this, "invokeAction");
             _configuration = new WKWebViewConfiguration
             {
-                UserContentController = _contentController
+                UserContentController = _contentController,
+                AllowsInlineMediaPlayback = true
             };
+
 
             var wkWebView = new WKWebView(Frame, _configuration)
             {
                 Opaque = false,
                 UIDelegate = this,
-                NavigationDelegate = _navigationDelegate
+                NavigationDelegate = _navigationDelegate,
             };
 
-            Shared.HybridWebViewControl.CallbackAdded += OnCallbackAdded;
+
+            HybridWebViewControl.CallbackAdded += OnCallbackAdded;
 
             SetNativeControl(wkWebView);
+            SetUserAgent();
             OnControlChanged?.Invoke(this, wkWebView);
         }
 
@@ -107,7 +115,7 @@ namespace Plugin.HybridWebView.iOS
             if (Element == null || string.IsNullOrWhiteSpace(e)) return;
 
             if ((sender == null && Element.EnableGlobalCallbacks) || sender != null)
-                await OnJavascriptInjectionRequest(Shared.HybridWebViewControl.GenerateFunctionScript(e));
+                await OnJavascriptInjectionRequest(HybridWebViewControl.GenerateFunctionScript(e));
         }
 
         void OnPropertyChanged(object sender, PropertyChangedEventArgs e)
@@ -132,116 +140,100 @@ namespace Plugin.HybridWebView.iOS
                 await store.DeleteCookieAsync(c);
             }
 
-            /* Delete shared-storage for url also */
-
             var url = new Uri(Element.Source);
             NSHttpCookie[] sharedCookies = NSHttpCookieStorage.SharedStorage.CookiesForUrl(url);
             foreach (NSHttpCookie c in sharedCookies)
             {
                 NSHttpCookieStorage.SharedStorage.DeleteCookie(c);
             }
+
         }
 
-        /* 
-         * Sets cookievalue based on cookiename. 
-         * If duration is set to 0 or less, the cookie is deleted.
-         * If duration isn't specified, the cookie is marked as sessioncookie. 
-        */
-
-        private Task OnSetCookieRequest(string cookieName, string cookieValue, long? duration = null)
+        private async Task<string> OnSetCookieRequestAsync(Cookie cookie)
         {
-            return Task.Run(() =>
+            if (Control == null) return string.Empty;
+            var toReturn = string.Empty;
+            try
             {
-                try
-                {
-                    var url = new Uri(Element.Source);
-                    var domain = url.Host;
+                var domain = Control.Url.Host;
+                var newCookie = new NSHttpCookie(cookie);
 
-                    NSHttpCookie[] sharedCookies = NSHttpCookieStorage.SharedStorage.CookiesForUrl(url);
+                NSHttpCookieStorage.SharedStorage.SetCookie(newCookie);
 
-                    var cookieDictionary = new NSMutableDictionary();
-                    cookieDictionary.Add(NSHttpCookie.KeyName, new NSString(cookieName));
-                    cookieDictionary.Add(NSHttpCookie.KeyValue, new NSString(cookieValue));
-                    cookieDictionary.Add(NSHttpCookie.KeyDomain, new NSString(domain));
-                    cookieDictionary.Add(NSHttpCookie.KeyPath, new NSString(url.AbsolutePath));
-                    if (url.Scheme == "https")
-                    {
-                        cookieDictionary.Add(NSHttpCookie.KeySecure, new NSString("true"));
-                    }
-                    else
-                    {
-                        cookieDictionary.Add(NSHttpCookie.KeySecure, new NSString("false"));
-                    }
+                var store = _configuration.WebsiteDataStore.HttpCookieStore;
+                store.SetCookie(newCookie, () => { });
 
-                    if (duration != null)
-                    {
-                        double _duration = (long) duration;
-                        cookieDictionary.Add(NSHttpCookie.KeyExpires, (NSDate) DateTime.Now.AddSeconds(_duration));
-                    }
+                toReturn = await OnGetCookieRequestAsync(cookie.Name);
 
-                    var newCookie = new NSHttpCookie(cookieDictionary);
-
-                    NSHttpCookieStorage.SharedStorage.SetCookie(newCookie);
-                }
-                catch (Exception)
-                {
-                }
-            });
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("We had a crash " + e);
+                toReturn = string.Empty;
+            }
+            return toReturn;
         }
 
-        /* gets all cookies on current page */
-        private async Task<string> OnGetAllCookiesRequest()
+        async Task<string> OnGetAllCookiesRequestAsync()
         {
             if (Control == null || Element == null)
             {
                 return string.Empty;
             }
             var cookieCollection = string.Empty;
-            var url = new Uri(Element.Source);
+            var url = Control.Url;
 
             NSHttpCookie[] sharedCookies = NSHttpCookieStorage.SharedStorage.CookiesForUrl(url);
             foreach (NSHttpCookie c in sharedCookies)
             {
-                cookieCollection += c.Name + "=" + c.Value + "; ";
-            }
-
-            var store = _configuration.WebsiteDataStore.HttpCookieStore;
-
-            var cookies = await store.GetAllCookiesAsync();
-            foreach (var c in cookies)
-            {
-                cookieCollection += c.Name + "=" + c.Value + "; ";
-            }
-            if (cookieCollection.Length > 0)
-            {
-                cookieCollection = cookieCollection.Remove(cookieCollection.Length - 2);
-            }
-            return cookieCollection;
-        }
-
-        /* gets cookie based on cookiekey */
-
-        private async Task<string> OnGetCookieRequest(string cookieName)
-        {
-            if (Control == null || Element == null) return string.Empty;
-            var url = new Uri(Element.Source);
-            var toReturn = string.Empty;
-            NSHttpCookie[] sharedCookies = NSHttpCookieStorage.SharedStorage.CookiesForUrl(url);
-            foreach (NSHttpCookie c in sharedCookies)
-            {
-                if (c.Name == cookieName)
+                if (c.Domain == url.Host)
                 {
-                    return c.Value;
+                    cookieCollection += c.Name + "=" + c.Value + "; ";
                 }
             }
 
             var store = _configuration.WebsiteDataStore.HttpCookieStore;
 
             var cookies = await store.GetAllCookiesAsync();
+
             foreach (var c in cookies)
             {
-                if (c.Name == cookieName)
+                if (url.Host.Contains(c.Domain))
+                {
+                    cookieCollection += c.Name + "=" + c.Value + "; ";
+                }
+            }
+
+            if (cookieCollection.Length > 0)
+            {
+                cookieCollection = cookieCollection.Remove(cookieCollection.Length - 2);
+            }
+
+            return cookieCollection;
+        }
+
+        private async Task<string> OnGetCookieRequestAsync(string key)
+        {
+            if (Control == null || Element == null) return string.Empty;
+            var url = Control.Url;
+            var toReturn = string.Empty;
+
+            var store = _configuration.WebsiteDataStore.HttpCookieStore;
+
+            var cookies = await store.GetAllCookiesAsync();
+            foreach (var c in cookies)
+            {
+                if (c.Name == key && c.Domain == url.Host)
                     return c.Value;
+            }
+
+            NSHttpCookie[] sharedCookies = NSHttpCookieStorage.SharedStorage.CookiesForUrl(url);
+            foreach (NSHttpCookie c in sharedCookies)
+            {
+                if (c.Name == key && c.Domain == url.Host)
+                {
+                    return c.Value;
+                }
             }
 
             return string.Empty;
@@ -318,7 +310,7 @@ namespace Plugin.HybridWebView.iOS
 
             if (Element.EnableGlobalHeaders)
             {
-                foreach (var header in Shared.HybridWebViewControl.GlobalRegisteredHeaders)
+                foreach (var header in HybridWebViewControl.GlobalRegisteredHeaders)
                 {
                     var key = new NSString(header.Key);
                     if (!headers.ContainsKey(key))
@@ -368,7 +360,7 @@ namespace Plugin.HybridWebView.iOS
          */
 
         [Export("webView:runJavaScriptAlertPanelWithMessage:initiatedByFrame:completionHandler:")]
-        public void RunJavaScriptAlertPanel(WKWebView webView, string message, WKFrameInfo frame, Action completionHandler)
+        public void RunJavaScriptAlertPanel(WebKit.WKWebView webView, string message, WKFrameInfo frame, Action completionHandler)
         {
             var alertController = UIAlertController.Create(null, message, UIAlertControllerStyle.Alert);
             alertController.AddAction(UIAlertAction.Create("Ok", UIAlertActionStyle.Default, null));
@@ -384,13 +376,15 @@ namespace Plugin.HybridWebView.iOS
         {
             var alertController = UIAlertController.Create(null, message, UIAlertControllerStyle.Alert);
 
-            alertController.AddAction(UIAlertAction.Create("Ok", UIAlertActionStyle.Default, okAction => {
+            alertController.AddAction(UIAlertAction.Create("Ok", UIAlertActionStyle.Default, okAction =>
+            {
 
                 completionHandler(true);
 
             }));
 
-            alertController.AddAction(UIAlertAction.Create("Cancel", UIAlertActionStyle.Default, cancelAction => {
+            alertController.AddAction(UIAlertAction.Create("Cancel", UIAlertActionStyle.Default, cancelAction =>
+            {
 
                 completionHandler(false);
 
@@ -402,29 +396,39 @@ namespace Plugin.HybridWebView.iOS
 
 
         [Export("webView:runJavaScriptTextInputPanelWithPrompt:defaultText:initiatedByFrame:completionHandler:")]
-        public void RunJavaScriptTextInputPanel(WKWebView webView, string prompt, string defaultText, WKFrameInfo frame, Action<string> completionHandler)
+        public void RunJavaScriptTextInputPanel(WKWebView webView, string prompt, string defaultText, WebKit.WKFrameInfo frame, System.Action<string> completionHandler)
         {
             var alertController = UIAlertController.Create(null, prompt, UIAlertControllerStyle.Alert);
 
             UITextField alertTextField = null;
-            alertController.AddTextField(textField => {
+            alertController.AddTextField(textField =>
+            {
                 textField.Placeholder = defaultText;
                 alertTextField = textField;
             });
 
-            alertController.AddAction(UIAlertAction.Create("Ok", UIAlertActionStyle.Default, okAction => {
+            alertController.AddAction(UIAlertAction.Create("Ok", UIAlertActionStyle.Default, okAction =>
+            {
 
                 completionHandler(alertTextField.Text);
 
             }));
 
-            alertController.AddAction(UIAlertAction.Create("Cancel", UIAlertActionStyle.Default, cancelAction => {
+            alertController.AddAction(UIAlertAction.Create("Cancel", UIAlertActionStyle.Default, cancelAction =>
+            {
 
                 completionHandler(null);
 
             }));
 
             UIApplication.SharedApplication.KeyWindow.RootViewController.PresentViewController(alertController, true, null);
+        }
+        private void SetUserAgent(object sender = null, EventArgs e = null)
+        {
+            if (Control != null && Element.UserAgent != null && Element.UserAgent.Length > 0)
+            {
+                Control.CustomUserAgent = Element.UserAgent;
+            }
         }
     }
 }

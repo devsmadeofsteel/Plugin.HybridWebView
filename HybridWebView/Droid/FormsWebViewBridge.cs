@@ -6,18 +6,19 @@ namespace Plugin.HybridWebView.Droid
 {
     public class FormsWebViewBridge : Java.Lang.Object
     {
-        readonly WeakReference<HybridWebViewRenderer> _reference;
+
+        readonly WeakReference<HybridWebViewRenderer> Reference;
 
         public FormsWebViewBridge(HybridWebViewRenderer renderer)
         {
-            _reference = new WeakReference<HybridWebViewRenderer>(renderer);
+            Reference = new WeakReference<HybridWebViewRenderer>(renderer);
         }
 
         [JavascriptInterface]
         [Export("invokeAction")]
         public void InvokeAction(string data)
         {
-            if (_reference == null || !_reference.TryGetTarget(out HybridWebViewRenderer renderer)) return;
+            if (Reference == null || !Reference.TryGetTarget(out HybridWebViewRenderer renderer)) return;
             if (renderer.Element == null) return;
 
             renderer.Element.HandleScriptReceived(data);

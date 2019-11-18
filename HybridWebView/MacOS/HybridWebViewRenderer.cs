@@ -4,14 +4,17 @@ using System.IO;
 using System.Threading.Tasks;
 using Foundation;
 using WebKit;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Net;
+using Plugin.HybridWebView.macOS;
+using Plugin.HybridWebView.Shared;
+using Plugin.HybridWebView.Shared.Enumerations;
 using Xamarin.Forms.Platform.MacOS;
 
-namespace Plugin.HybridWebView.MacOS
+
+[assembly: Xamarin.Forms.ExportRenderer(typeof(HybridWebViewControl), typeof(HybridWebViewRenderer))]
+namespace Plugin.HybridWebView.macOS
 {
-    public class HybridWebViewRenderer : ViewRenderer<FormsWebView, WKWebView>, IWKScriptMessageHandler, IWKUIDelegate
+    public class HybridWebViewRenderer : ViewRenderer<HybridWebViewControl, WKWebView>, IWKScriptMessageHandler, IWKUIDelegate
     {
         public static event EventHandler<WKWebView> OnControlChanged;
 
@@ -28,7 +31,7 @@ namespace Plugin.HybridWebView.MacOS
             var dt = DateTime.Now;
         }
 
-        protected override void OnElementChanged(ElementChangedEventArgs<FormsWebView> e)
+        protected override void OnElementChanged(ElementChangedEventArgs<HybridWebViewControl> e)
         {
             base.OnElementChanged(e);
 
@@ -42,32 +45,34 @@ namespace Plugin.HybridWebView.MacOS
                 DestroyElement(e.OldElement);
         }
 
-        void SetupElement(FormsWebView element)
+        void SetupElement(HybridWebViewControl element)
         {
             element.PropertyChanged += OnPropertyChanged;
             element.OnJavascriptInjectionRequest += OnJavascriptInjectionRequest;
             element.OnClearCookiesRequested += OnClearCookiesRequest;
-            element.OnGetCookieValueRequested += OnGetCookieRequest;
-            element.OnGetAllCookiesRequested += OnGetAllCookiesRequest;
-            element.OnSetCookieValueRequested += OnSetCookieRequest;
+            element.OnGetAllCookiesRequestedAsync += OnGetAllCookiesRequestAsync;
+            element.OnGetCookieRequestedAsync += OnGetCookieRequestAsync;
+            element.OnSetCookieRequestedAsync += OnSetCookieRequestAsync;
             element.OnBackRequested += OnBackRequested;
             element.OnForwardRequested += OnForwardRequested;
             element.OnRefreshRequested += OnRefreshRequested;
+            element.OnUserAgentChanged += SetUserAgent;
 
             SetSource();
         }
 
-        void DestroyElement(FormsWebView element)
+        void DestroyElement(HybridWebViewControl element)
         {
             element.PropertyChanged -= OnPropertyChanged;
             element.OnJavascriptInjectionRequest -= OnJavascriptInjectionRequest;
             element.OnClearCookiesRequested -= OnClearCookiesRequest;
-            element.OnGetAllCookiesRequested -= OnGetAllCookiesRequest;
-            element.OnGetCookieValueRequested -= OnGetCookieRequest;
-            element.OnSetCookieValueRequested -= OnSetCookieRequest;
+            element.OnGetAllCookiesRequestedAsync -= OnGetAllCookiesRequestAsync;
+            element.OnGetCookieRequestedAsync -= OnGetCookieRequestAsync;
+            element.OnSetCookieRequestedAsync -= OnSetCookieRequestAsync;
             element.OnBackRequested -= OnBackRequested;
             element.OnForwardRequested -= OnForwardRequested;
             element.OnRefreshRequested -= OnRefreshRequested;
+            element.OnUserAgentChanged += SetUserAgent;
 
             element.Dispose();
         }
@@ -88,18 +93,21 @@ namespace Plugin.HybridWebView.MacOS
                 NavigationDelegate = _navigationDelegate
             };
 
-            FormsWebView.CallbackAdded += OnCallbackAdded;
+
+            HybridWebViewControl.CallbackAdded += OnCallbackAdded;
 
             SetNativeControl(wkWebView);
+            SetUserAgent();
             OnControlChanged?.Invoke(this, wkWebView);
         }
 
         async void OnCallbackAdded(object sender, string e)
         {
-            if (Element == null || string.IsNullOrWhiteSpace(e)) return;
+            if (Element == null || string.IsNullOrWhiteSpace(e))
+                return;
 
             if ((sender == null && Element.EnableGlobalCallbacks) || sender != null)
-                await OnJavascriptInjectionRequest(FormsWebView.GenerateFunctionScript(e));
+                await OnJavascriptInjectionRequest(HybridWebViewControl.GenerateFunctionScript(e));
         }
 
         void OnPropertyChanged(object sender, PropertyChangedEventArgs e)
@@ -124,120 +132,100 @@ namespace Plugin.HybridWebView.MacOS
                 await store.DeleteCookieAsync(c);
             }
 
-            /* Delete shared-storage for url also */
-
             var url = new Uri(Element.Source);
             NSHttpCookie[] sharedCookies = NSHttpCookieStorage.SharedStorage.CookiesForUrl(url);
             foreach (NSHttpCookie c in sharedCookies)
             {
                 NSHttpCookieStorage.SharedStorage.DeleteCookie(c);
             }
+
         }
 
-        /* 
-         * Sets cookievalue based on cookiename. 
-         * If duration is set to 0 or less, the cookie is deleted.
-         * If duration isn't specified, the cookie is marked as sessioncookie. 
-        */
-
-        private async Task<string> OnSetCookieRequest(string cookieName, string cookieValue, long? duration = null)
+        private async Task<string> OnSetCookieRequestAsync(Cookie cookie)
         {
             if (Control == null) return string.Empty;
             var toReturn = string.Empty;
             try
             {
-                var url = new Uri(Element.Source);
-                var domain = url.Host;
-
-                NSHttpCookie[] sharedCookies = NSHttpCookieStorage.SharedStorage.CookiesForUrl(url);
-
-                var cookieDictionary = new NSMutableDictionary();
-                cookieDictionary.Add(NSHttpCookie.KeyName, new NSString(cookieName));
-                cookieDictionary.Add(NSHttpCookie.KeyValue, new NSString(cookieValue));
-                cookieDictionary.Add(NSHttpCookie.KeyDomain, new NSString(domain));
-                cookieDictionary.Add(NSHttpCookie.KeyPath, new NSString(url.AbsolutePath));
-                if (url.Scheme == "https")
-                {
-                    cookieDictionary.Add(NSHttpCookie.KeySecure, new NSString("true"));
-                }
-                else
-                {
-                    cookieDictionary.Add(NSHttpCookie.KeySecure, new NSString("false"));
-                }
-                if (duration != null)
-                {
-                    double _duration = (long)duration;
-                    cookieDictionary.Add(NSHttpCookie.KeyExpires, (NSDate)DateTime.Now.AddSeconds(_duration));
-                }
-
-                var newCookie = new NSHttpCookie(cookieDictionary);
+                var domain = Control.Url.Host;
+                var newCookie = new NSHttpCookie(cookie);
 
                 NSHttpCookieStorage.SharedStorage.SetCookie(newCookie);
 
-                toReturn = await OnGetCookieRequest(cookieName);
+                var store = _configuration.WebsiteDataStore.HttpCookieStore;
+                store.SetCookie(newCookie, () => { });
+
+                toReturn = await OnGetCookieRequestAsync(cookie.Name);
 
             }
             catch (Exception e)
             {
+                Console.WriteLine("We had a crash " + e);
                 toReturn = string.Empty;
             }
             return toReturn;
         }
 
-        /* gets all cookies on current page */
-
-        private async Task<string> OnGetAllCookiesRequest()
+        async Task<string> OnGetAllCookiesRequestAsync()
         {
             if (Control == null || Element == null)
             {
                 return string.Empty;
             }
             var cookieCollection = string.Empty;
-            var url = new Uri(Element.Source);
+            var url = Control.Url;
 
             NSHttpCookie[] sharedCookies = NSHttpCookieStorage.SharedStorage.CookiesForUrl(url);
             foreach (NSHttpCookie c in sharedCookies)
             {
-                cookieCollection += c.Name + "=" + c.Value + "; ";
-            }
-
-            var store = _configuration.WebsiteDataStore.HttpCookieStore;
-
-            var cookies = await store.GetAllCookiesAsync();
-            foreach (var c in cookies)
-            {
-                cookieCollection += c.Name + "=" + c.Value + "; ";
-            }
-            if (cookieCollection.Length > 0)
-            {
-                cookieCollection = cookieCollection.Remove(cookieCollection.Length - 2);
-            }
-            return cookieCollection;
-        }
-
-        /* gets cookie based on cookiekey */
-
-        private async Task<string> OnGetCookieRequest(string cookieName)
-        {
-            if (Control == null || Element == null) return string.Empty;
-            var url = new Uri(Element.Source);
-            var toReturn = string.Empty;
-            NSHttpCookie[] sharedCookies = NSHttpCookieStorage.SharedStorage.CookiesForUrl(url);
-            foreach (NSHttpCookie c in sharedCookies)
-            {
-                if (c.Name == cookieName)
+                if (c.Domain == url.Host)
                 {
-                    return c.Value;
+                    cookieCollection += c.Name + "=" + c.Value + "; ";
                 }
             }
 
             var store = _configuration.WebsiteDataStore.HttpCookieStore;
 
             var cookies = await store.GetAllCookiesAsync();
+
             foreach (var c in cookies)
             {
-                if (c.Name == cookieName)
+                if (url.Host.Contains(c.Domain))
+                {
+                    cookieCollection += c.Name + "=" + c.Value + "; ";
+                }
+            }
+
+            if (cookieCollection.Length > 0)
+            {
+                cookieCollection = cookieCollection.Remove(cookieCollection.Length - 2);
+            }
+
+            return cookieCollection;
+        }
+
+        private async Task<string> OnGetCookieRequestAsync(string key)
+        {
+            if (Control == null || Element == null) return string.Empty;
+            var url = Control.Url;
+            var toReturn = string.Empty;
+
+            var store = _configuration.WebsiteDataStore.HttpCookieStore;
+
+            var cookies = await store.GetAllCookiesAsync();
+            foreach (var c in cookies)
+            {
+                if (c.Name == key && c.Domain == url.Host)
                     return c.Value;
+            }
+
+            NSHttpCookie[] sharedCookies = NSHttpCookieStorage.SharedStorage.CookiesForUrl(url);
+            foreach (NSHttpCookie c in sharedCookies)
+            {
+                if (c.Name == key && c.Domain == url.Host)
+                {
+                    return c.Value;
+                }
             }
 
             return string.Empty;
@@ -314,14 +302,13 @@ namespace Plugin.HybridWebView.MacOS
 
             if (Element.EnableGlobalHeaders)
             {
-                foreach (var header in FormsWebView.GlobalRegisteredHeaders)
+                foreach (var header in HybridWebViewControl.GlobalRegisteredHeaders)
                 {
                     var key = new NSString(header.Key);
                     if (!headers.ContainsKey(key))
                         headers.Add(key, new NSString(header.Value));
                 }
             }
-
             var url = new NSUrl(Element.Source);
             var request = new NSMutableUrlRequest(url)
             {
@@ -357,6 +344,14 @@ namespace Plugin.HybridWebView.MacOS
 
             if (Control.CanGoBack)
                 Control.GoBack();
+        }
+
+        private void SetUserAgent(object sender = null, EventArgs e = null)
+        {
+            if (Control != null && Element.UserAgent != null && Element.UserAgent.Length > 0)
+            {
+                Control.CustomUserAgent = Element.UserAgent;
+            }
         }
     }
 }

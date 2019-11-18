@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using Plugin.HybridWebView.Shared.Delegates;
@@ -26,6 +26,7 @@ namespace Plugin.HybridWebView.Shared
         /// </summary>
         public delegate Task ClearCookiesRequestDelegate();
 
+
         /// <summary>
         ///  Delegate to await getting all cookies. Returns string or string.Empty
         /// </summary>
@@ -34,12 +35,12 @@ namespace Plugin.HybridWebView.Shared
         /// <summary>
         ///  Delegate to await getting specified cookie from cookiename. Returns string or string.Empty
         /// </summary>
-        public delegate Task<string> GetCookieValueDelegate(string cookieName);
+        public delegate Task<string> GetCookieDelegate(string key);
 
         /// <summary>
-        ///  Delegate to await setting cookie by name and value. Returns cookievalue or string.Empty if something failed
+        ///  Delegate to await setting cookie Cookie object. Returns cookievalue or string.Empty if something failed
         /// </summary>
-        public delegate Task SetCookieValueDelegate(string cookieName, string cookieValue, long? duration = null);
+        public delegate Task<string> SetCookieDelegate(Cookie cookie);
 
         /// <summary>
         /// Fired when navigation begins, for example when the source is set.
@@ -64,15 +65,17 @@ namespace Plugin.HybridWebView.Shared
 
         internal event EventHandler OnBackRequested;
 
-        internal event GetAllCookiesDelegate OnGetAllCookiesRequested;
+        internal event GetAllCookiesDelegate OnGetAllCookiesRequestedAsync;
 
-        internal event GetCookieValueDelegate OnGetCookieValueRequested;
+        internal event GetCookieDelegate OnGetCookieRequestedAsync;
 
-        internal event SetCookieValueDelegate OnSetCookieValueRequested;
+        internal event SetCookieDelegate OnSetCookieRequestedAsync;
 
         internal event EventHandler OnForwardRequested;
 
         internal event EventHandler OnRefreshRequested;
+
+        internal event EventHandler OnUserAgentChanged;
 
         internal event JavascriptInjectionRequestDelegate OnJavascriptInjectionRequest;
 
@@ -114,6 +117,12 @@ namespace Plugin.HybridWebView.Shared
         {
             get { return (string)GetValue(BaseUrlProperty); }
             set { SetValue(BaseUrlProperty, value); }
+        }
+
+        public string CurrentUrl
+        {
+            get { return (string)GetValue(CurrentUrlProperty); }
+            set { SetValue(CurrentUrlProperty, value); }
         }
 
         /// <summary>
@@ -167,6 +176,22 @@ namespace Plugin.HybridWebView.Shared
             set => SetValue(UseWideViewPortProperty, value);
         }
 
+        /// <summary>
+        /// Bindable property to control the user agent
+        /// </summary>
+        public string UserAgent
+        {
+            get => (string)GetValue(UserAgentProperty);
+            set
+            {
+                if (UserAgent == value)
+                    return;
+
+                SetValue(UserAgentProperty, value);
+                OnUserAgentChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+
         public HybridWebViewControl()
         {
             HorizontalOptions = VerticalOptions = LayoutOptions.FillAndExpand;
@@ -212,37 +237,38 @@ namespace Plugin.HybridWebView.Shared
         /// Getting all cookies from the current domain from shared storage
         /// </summary>
         /// <returns>All cookies found for the current website. Returned on regular format "KEY=VALUE; KEY2=VALUE2". If no cookies where found, returns string.Empty</returns>
-        public async Task<string> GetAllCookiesValueAsync()
+        public async Task<string> GetAllCookiesAsync()
         {
-            if (OnGetAllCookiesRequested != null)
-                return await OnGetAllCookiesRequested.Invoke();
+            if (OnGetAllCookiesRequestedAsync != null)
+                return await OnGetAllCookiesRequestedAsync.Invoke();
             return string.Empty;
         }
 
         /// <summary>
-        /// Getting a cookie value by cookiename.
+        /// Getting a cookie value by cookiename
         /// </summary>
-        /// <paramref name="cookieName">Cookie name to fetch</paramref>
+        /// <paramref name="key">Cookie name to fetch</paramref>
         /// <returns>A string with the cookievalue. is string.Empty if there is no cookie with that name</returns>
-        public async Task<string> GetCookieValueAsync(string cookieName)
+        public async Task<string> GetCookieAsync(string key)
         {
-            if (string.IsNullOrWhiteSpace(cookieName)) return string.Empty;
-            if (OnGetCookieValueRequested != null)
-                return await OnGetCookieValueRequested.Invoke(cookieName);
+            if (string.IsNullOrWhiteSpace(key)) return string.Empty;
+            if (OnGetCookieRequestedAsync != null)
+                return await OnGetCookieRequestedAsync.Invoke(key);
             return string.Empty;
         }
 
         /// <summary>
         /// Setting a cookie value by cookiename
         /// </summary>
-        /// <param name="cookieName">Cookie name to fetch</param>
+        /// <param name="cookie">Cookie object to set as cookie</param>
         /// <param name="duration">Expiration of cookie in seconds. If set to 0 or lower, the cookie is deleted. If not specified the cookie is set as sessioncookie and removed on app-close (Only works with iOS/macOS for now)</param>
         /// <returns>A string with the cookievalue. is string.Empty if there is no cookie with that name</returns>
-        public async Task SetCookieValueAsync(string cookieName, string cookieValue, long? duration = null)
+        public async Task<string> SetCookieAsync(Cookie cookie)
         {
-            if (string.IsNullOrWhiteSpace(cookieName)) return;
-            if (OnSetCookieValueRequested != null)
-                await OnSetCookieValueRequested.Invoke(cookieName, cookieValue, duration);
+            if (cookie == null) return string.Empty;
+            if (OnGetCookieRequestedAsync != null)
+                return await OnSetCookieRequestedAsync.Invoke(cookie);
+            return string.Empty;
         }
 
 
@@ -362,7 +388,6 @@ namespace Plugin.HybridWebView.Shared
             else if (GlobalRegisteredCallbacks.ContainsKey(action.Action))
                 GlobalRegisteredCallbacks[action.Action]?.Invoke(action.Data);
         }
-
         #endregion
     }
 }

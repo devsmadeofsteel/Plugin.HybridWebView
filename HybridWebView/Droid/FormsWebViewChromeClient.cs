@@ -5,11 +5,13 @@ namespace Plugin.HybridWebView.Droid
 {
     public class FormsWebViewChromeClient : WebChromeClient
     {
-        readonly WeakReference<HybridWebViewRenderer> _reference;
+
+        readonly WeakReference<HybridWebViewRenderer> Reference;
 
         public FormsWebViewChromeClient(HybridWebViewRenderer renderer)
         {
-            _reference = new WeakReference<HybridWebViewRenderer>(renderer);
+            Reference = new WeakReference<HybridWebViewRenderer>(renderer);
         }
+
     }
 }

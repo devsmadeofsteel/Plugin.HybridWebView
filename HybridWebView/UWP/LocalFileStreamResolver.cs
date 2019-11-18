@@ -9,11 +9,11 @@ namespace Plugin.HybridWebView.UWP
 {
     public class LocalFileStreamResolver : IUriToStreamResolver
     {
-        private readonly WeakReference<HybridWebViewRenderer> _reference;
+        private readonly WeakReference<HybridWebViewRenderer> Reference;
 
         public LocalFileStreamResolver(HybridWebViewRenderer renderer)
         {
-            _reference = new WeakReference<HybridWebViewRenderer>(renderer);
+            Reference = new WeakReference<HybridWebViewRenderer>(renderer);
         }
 
         public IAsyncOperation<IInputStream> UriToStreamAsync(Uri uri)
@@ -27,8 +27,8 @@ namespace Plugin.HybridWebView.UWP
 
         private async Task<IInputStream> GetContent(string path)
         {
-            if (!_reference.TryGetTarget(out HybridWebViewRenderer renderer))
-                return default;
+            if (!Reference.TryGetTarget(out HybridWebViewRenderer renderer))
+                return default(IInputStream);
 
             try
             {

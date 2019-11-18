@@ -1,25 +1,24 @@
 ﻿using System;
 using Foundation;
 using WebKit;
-using Xam.Plugin.WebView.Abstractions;
 using AppKit;
 
-namespace Plugin.HybridWebView.MacOS
+namespace Plugin.HybridWebView.macOS
 {
     public class FormsNavigationDelegate : WKNavigationDelegate
     {
 
-        readonly WeakReference<FormsWebViewRenderer> Reference;
+        readonly WeakReference<HybridWebViewRenderer> Reference;
 
-        public FormsNavigationDelegate(FormsWebViewRenderer renderer)
+        public FormsNavigationDelegate(HybridWebViewRenderer renderer)
         {
-            Reference = new WeakReference<FormsWebViewRenderer>(renderer);
+            Reference = new WeakReference<HybridWebViewRenderer>(renderer);
         }
 
         [Export("webView:decidePolicyForNavigationAction:decisionHandler:")]
         public override void DecidePolicy(WKWebView webView, WKNavigationAction navigationAction, Action<WKNavigationActionPolicy> decisionHandler)
         {
-            if (Reference == null || !Reference.TryGetTarget(out FormsWebViewRenderer renderer)) return;
+            if (Reference == null || !Reference.TryGetTarget(out HybridWebViewRenderer renderer)) return;
             if (renderer.Element == null) return;
 
             var response = renderer.Element.HandleNavigationStartRequest(navigationAction.Request.Url.ToString());
@@ -38,7 +37,7 @@ namespace Plugin.HybridWebView.MacOS
 
         public override void DecidePolicy(WKWebView webView, WKNavigationResponse navigationResponse, Action<WKNavigationResponsePolicy> decisionHandler)
         {
-            if (Reference == null || !Reference.TryGetTarget(out FormsWebViewRenderer renderer)) return;
+            if (Reference == null || !Reference.TryGetTarget(out HybridWebViewRenderer renderer)) return;
             if (renderer.Element == null) return;
 
             if (navigationResponse.Response is NSHttpUrlResponse)
@@ -59,7 +58,7 @@ namespace Plugin.HybridWebView.MacOS
         [Export("webView:didFinishNavigation:")]
         public async override void DidFinishNavigation(WKWebView webView, WKNavigation navigation)
         {
-            if (Reference == null || !Reference.TryGetTarget(out FormsWebViewRenderer renderer)) return;
+            if (Reference == null || !Reference.TryGetTarget(out HybridWebViewRenderer renderer)) return;
             if (renderer.Element == null) return;
 
             renderer.Element.HandleNavigationCompleted(webView.Url.ToString());
@@ -76,6 +75,18 @@ namespace Plugin.HybridWebView.MacOS
             renderer.Element.CanGoForward = webView.CanGoForward;
             renderer.Element.Navigating = false;
             renderer.Element.HandleContentLoaded();
+        }
+
+        [Foundation.Export("webView:didStartProvisionalNavigation:")]
+        [ObjCRuntime.BindingImpl(ObjCRuntime.BindingImplOptions.GeneratedCode | ObjCRuntime.BindingImplOptions.Optimizable)]
+        public virtual void DidStartProvisionalNavigation(WKWebView webView, WKNavigation navigation)
+        {
+            if (Reference == null || !Reference.TryGetTarget(out HybridWebViewRenderer renderer)) return;
+            if (renderer.Element == null) return;
+            Device.BeginInvokeOnMainThread(() =>
+            {
+                renderer.Element.CurrentUrl = webView.Url.ToString();
+            });
         }
     }
 }

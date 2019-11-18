@@ -1,26 +1,26 @@
-﻿using Android.Runtime;
-using Android.Content;
+﻿using Android.Content;
 using Xamarin.Forms;
 using System;
 using Android.Webkit;
 using Android.Net.Http;
 using Android.Graphics;
+using Plugin.HybridWebView.Shared;
 
 namespace Plugin.HybridWebView.Droid
 {
     public class FormsWebViewClient : WebViewClient
     {
 
-        readonly WeakReference<HybridWebViewRenderer> _reference;
+        readonly WeakReference<HybridWebViewRenderer> Reference;
 
         public FormsWebViewClient(HybridWebViewRenderer renderer)
         {
-            _reference = new WeakReference<HybridWebViewRenderer>(renderer);
+            Reference = new WeakReference<HybridWebViewRenderer>(renderer);
         }
 
         public override void OnReceivedHttpError(Android.Webkit.WebView view, IWebResourceRequest request, WebResourceResponse errorResponse)
         {
-            if (_reference == null || !_reference.TryGetTarget(out var renderer)) return;
+            if (Reference == null || !Reference.TryGetTarget(out HybridWebViewRenderer renderer)) return;
             if (renderer.Element == null) return;
 
             renderer.Element.HandleNavigationError(errorResponse.StatusCode);
@@ -30,7 +30,7 @@ namespace Plugin.HybridWebView.Droid
 
         public override void OnReceivedError(Android.Webkit.WebView view, IWebResourceRequest request, WebResourceError error)
         {
-            if (_reference == null || !_reference.TryGetTarget(out var renderer)) return;
+            if (Reference == null || !Reference.TryGetTarget(out HybridWebViewRenderer renderer)) return;
             if (renderer.Element == null) return;
 
             renderer.Element.HandleNavigationError((int)error.ErrorCode);
@@ -38,72 +38,47 @@ namespace Plugin.HybridWebView.Droid
             renderer.Element.Navigating = false;
         }
 
-        //For Android < 5.0
-        [Obsolete]
-        public override void OnReceivedError(Android.Webkit.WebView view, [GeneratedEnum] ClientError errorCode, string description, string failingUrl)
+        public override bool ShouldOverrideUrlLoading(Android.Webkit.WebView view, IWebResourceRequest request)
         {
-            if (Android.OS.Build.VERSION.SdkInt >= Android.OS.BuildVersionCodes.Lollipop) return;
+            if (DoesComponentWantToOverrideUrlLoading(view, request.Url.ToString()))
+                return true;
 
-            if (_reference == null || !_reference.TryGetTarget(out var renderer)) return;
-            if (renderer.Element == null) return;
-
-            renderer.Element.HandleNavigationError((int)errorCode);
-            renderer.Element.HandleNavigationCompleted(failingUrl.ToString());
-            renderer.Element.Navigating = false;
+            return base.ShouldOverrideUrlLoading(view, request);
         }
 
-        //For Android < 5.0
-        [Obsolete]
-        public override WebResourceResponse ShouldInterceptRequest(Android.Webkit.WebView view, string url)
+        [Obsolete("deprecated")]
+        public override bool ShouldOverrideUrlLoading(Android.Webkit.WebView view, string url)
         {
-            if (Android.OS.Build.VERSION.SdkInt >= Android.OS.BuildVersionCodes.Lollipop) goto EndShouldInterceptRequest;
+            if (DoesComponentWantToOverrideUrlLoading(view, url))
+                return true;
 
-            if (_reference == null || !_reference.TryGetTarget(out var renderer)) goto EndShouldInterceptRequest;
-            if (renderer.Element == null) goto EndShouldInterceptRequest;
-
-            var response = renderer.Element.HandleNavigationStartRequest(url);
-
-            if (response.Cancel || response.OffloadOntoDevice)
-            {
-                Device.BeginInvokeOnMainThread(() =>
-                {
-                    if (response.OffloadOntoDevice)
-                        AttemptToHandleCustomUrlScheme(view, url);
-
-                    view.StopLoading();
-                });
-            }
-
-            EndShouldInterceptRequest:
-            return base.ShouldInterceptRequest(view, url);
+            return base.ShouldOverrideUrlLoading(view, url);
         }
 
-        public override WebResourceResponse ShouldInterceptRequest(Android.Webkit.WebView view, IWebResourceRequest request)
+        private bool DoesComponentWantToOverrideUrlLoading(Android.Webkit.WebView view, string url)
         {
-            if (_reference == null || !_reference.TryGetTarget(out var renderer)) goto EndShouldInterceptRequest;
-            if (renderer.Element == null) goto EndShouldInterceptRequest;
-
-            var url = request.Url.ToString();
-            var response = renderer.Element.HandleNavigationStartRequest(url);
-
-            if (response.Cancel || response.OffloadOntoDevice)
+            if (Reference != null && Reference.TryGetTarget(out HybridWebViewRenderer renderer) && renderer.Element != null)
             {
-                Device.BeginInvokeOnMainThread(() =>
+                var response = renderer.Element.HandleNavigationStartRequest(url);
+
+                if (response.Cancel || response.OffloadOntoDevice)
                 {
-                    if (response.OffloadOntoDevice)
-                        AttemptToHandleCustomUrlScheme(view, url);
+                    Device.BeginInvokeOnMainThread(() =>
+                    {
+                        if (response.OffloadOntoDevice)
+                            AttemptToHandleCustomUrlScheme(view, url);
 
-                    view.StopLoading();
-                });
+                        view.StopLoading();
+                    });
+                    return true;
+                }
             }
-
-            EndShouldInterceptRequest:
-            return base.ShouldInterceptRequest(view, request);
+            return false;
         }
 
         void CheckResponseValidity(Android.Webkit.WebView view, string url)
         {
-            if (_reference == null || !_reference.TryGetTarget(out var renderer)) return;
+            if (Reference == null || !Reference.TryGetTarget(out HybridWebViewRenderer renderer)) return;
             if (renderer.Element == null) return;
 
             var response = renderer.Element.HandleNavigationStartRequest(url);
@@ -122,7 +97,7 @@ namespace Plugin.HybridWebView.Droid
 
         public override void OnPageStarted(Android.Webkit.WebView view, string url, Bitmap favicon)
         {
-            if (_reference == null || !_reference.TryGetTarget(out var renderer)) return;
+            if (Reference == null || !Reference.TryGetTarget(out HybridWebViewRenderer renderer)) return;
             if (renderer.Element == null) return;
 
             renderer.Element.Navigating = true;
@@ -132,9 +107,9 @@ namespace Plugin.HybridWebView.Droid
         {
             if (url.StartsWith("mailto"))
             {
-                var emailData = Android.Net.MailTo.Parse(url);
+                Android.Net.MailTo emailData = Android.Net.MailTo.Parse(url);
 
-                var email = new Intent(Intent.ActionSendto);
+                Intent email = new Intent(Intent.ActionSendto);
 
                 email.SetData(Android.Net.Uri.Parse("mailto:"));
                 email.PutExtra(Intent.ExtraEmail, new String[] { emailData.To });
@@ -150,7 +125,7 @@ namespace Plugin.HybridWebView.Droid
 
             if (url.StartsWith("http"))
             {
-                var webPage = new Intent(Intent.ActionView, Android.Net.Uri.Parse(url));
+                Intent webPage = new Intent(Intent.ActionView, Android.Net.Uri.Parse(url));
                 if (webPage.ResolveActivity(Forms.Context.PackageManager) != null)
                     Forms.Context.StartActivity(webPage);
 
@@ -162,7 +137,7 @@ namespace Plugin.HybridWebView.Droid
 
         public override void OnReceivedSslError(Android.Webkit.WebView view, SslErrorHandler handler, SslError error)
         {
-            if (_reference == null || !_reference.TryGetTarget(out var renderer)) return;
+            if (Reference == null || !Reference.TryGetTarget(out HybridWebViewRenderer renderer)) return;
             if (renderer.Element == null) return;
 
             if (HybridWebViewRenderer.IgnoreSSLGlobally)
@@ -177,22 +152,22 @@ namespace Plugin.HybridWebView.Droid
             }
         }
 
-        public override async void OnPageFinished(Android.Webkit.WebView view, string url)
+        public async override void OnPageFinished(Android.Webkit.WebView view, string url)
         {
-            if (_reference == null || !_reference.TryGetTarget(out var renderer)) return;
+            if (Reference == null || !Reference.TryGetTarget(out HybridWebViewRenderer renderer)) return;
             if (renderer.Element == null) return;
 
             // Add Injection Function
-            await renderer.OnJavascriptInjectionRequest(Shared.HybridWebViewControl.InjectedFunction);
+            await renderer.OnJavascriptInjectionRequest(HybridWebViewControl.InjectedFunction);
 
             // Add Global Callbacks
             if (renderer.Element.EnableGlobalCallbacks)
-                foreach (var callback in Shared.HybridWebViewControl.GlobalRegisteredCallbacks)
-                    await renderer.OnJavascriptInjectionRequest(Shared.HybridWebViewControl.GenerateFunctionScript(callback.Key));
+                foreach (var callback in HybridWebViewControl.GlobalRegisteredCallbacks)
+                    await renderer.OnJavascriptInjectionRequest(HybridWebViewControl.GenerateFunctionScript(callback.Key));
 
             // Add Local Callbacks
             foreach (var callback in renderer.Element.LocalRegisteredCallbacks)
-                await renderer.OnJavascriptInjectionRequest(Shared.HybridWebViewControl.GenerateFunctionScript(callback.Key));
+                await renderer.OnJavascriptInjectionRequest(HybridWebViewControl.GenerateFunctionScript(callback.Key));
 
             renderer.Element.CanGoBack = view.CanGoBack();
             renderer.Element.CanGoForward = view.CanGoForward();

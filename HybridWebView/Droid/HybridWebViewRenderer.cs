@@ -2,12 +2,14 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Net;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Android.OS;
 using Android.Webkit;
 using Plugin.HybridWebView.Droid;
 using Plugin.HybridWebView.Shared;
+using Plugin.HybridWebView.Shared.Delegates;
 using Plugin.HybridWebView.Shared.Enumerations;
 using Xamarin.Forms;
 using Xamarin.Forms.Platform.Android;
@@ -39,7 +41,7 @@ namespace Plugin.HybridWebView.Droid
             var dt = DateTime.Now;
         }
 
-        protected override void OnElementChanged(ElementChangedEventArgs<Shared.HybridWebViewControl> e)
+        protected override void OnElementChanged(ElementChangedEventArgs<HybridWebViewControl> e)
         {
             base.OnElementChanged(e);
 
@@ -58,32 +60,36 @@ namespace Plugin.HybridWebView.Droid
                 Control.Settings.UseWideViewPort = true;
             }
         }
-        void SetupElement(Shared.HybridWebViewControl element)
+        void SetupElement(HybridWebViewControl element)
         {
             element.PropertyChanged += OnPropertyChanged;
             element.OnJavascriptInjectionRequest += OnJavascriptInjectionRequest;
-            element.OnGetCookieValueRequested += OnGetCookieValueRequest;
-            element.OnGetAllCookiesRequested += OnGetAllCookieRequest;
-            element.OnSetCookieValueRequested += OnSetCookieValueRequest;
+            element.OnGetCookieRequestedAsync += OnGetCookieRequestAsync;
+            element.OnGetAllCookiesRequestedAsync += OnGetAllCookieRequestAsync;
+            element.OnSetCookieRequestedAsync += OnSetCookieRequestAsync;
             element.OnClearCookiesRequested += OnClearCookiesRequest;
             element.OnBackRequested += OnBackRequested;
             element.OnForwardRequested += OnForwardRequested;
             element.OnRefreshRequested += OnRefreshRequested;
+            element.OnNavigationStarted += SetCurrentUrl;
+            element.OnUserAgentChanged += SetUserAgent;
 
             SetSource();
         }
 
-        void DestroyElement(Shared.HybridWebViewControl element)
+        void DestroyElement(HybridWebViewControl element)
         {
             element.PropertyChanged -= OnPropertyChanged;
             element.OnJavascriptInjectionRequest -= OnJavascriptInjectionRequest;
-            element.OnGetAllCookiesRequested -= OnGetAllCookieRequest;
-            element.OnGetCookieValueRequested -= OnGetCookieValueRequest;
-            element.OnSetCookieValueRequested -= OnSetCookieValueRequest;
             element.OnClearCookiesRequested -= OnClearCookiesRequest;
+            element.OnGetAllCookiesRequestedAsync -= OnGetAllCookieRequestAsync;
+            element.OnGetCookieRequestedAsync -= OnGetCookieRequestAsync;
+            element.OnSetCookieRequestedAsync -= OnSetCookieRequestAsync;
             element.OnBackRequested -= OnBackRequested;
             element.OnForwardRequested -= OnForwardRequested;
             element.OnRefreshRequested -= OnRefreshRequested;
+            element.OnNavigationStarted -= SetCurrentUrl;
+            element.OnUserAgentChanged -= SetUserAgent;
 
             element.Dispose();
         }
@@ -99,14 +105,16 @@ namespace Plugin.HybridWebView.Droid
             // Defaults
             webView.Settings.JavaScriptEnabled = true;
             webView.Settings.DomStorageEnabled = true;
+
+
             webView.AddJavascriptInterface(new FormsWebViewBridge(this), "bridge");
             webView.SetWebViewClient(new FormsWebViewClient(this));
             webView.SetWebChromeClient(new FormsWebViewChromeClient(this));
             webView.SetBackgroundColor(Android.Graphics.Color.Transparent);
 
-            Shared.HybridWebViewControl.CallbackAdded += OnCallbackAdded;
-
+            HybridWebViewControl.CallbackAdded += OnCallbackAdded;
             SetNativeControl(webView);
+            SetUserAgent();
             OnControlChanged?.Invoke(this, webView);
         }
 
@@ -115,7 +123,7 @@ namespace Plugin.HybridWebView.Droid
             if (Element == null || string.IsNullOrWhiteSpace(e)) return;
 
             if ((sender == null && Element.EnableGlobalCallbacks) || sender != null)
-                await OnJavascriptInjectionRequest(Shared.HybridWebViewControl.GenerateFunctionScript(e));
+                await OnJavascriptInjectionRequest(HybridWebViewControl.GenerateFunctionScript(e));
         }
 
         void OnForwardRequested(object sender, EventArgs e)
@@ -153,140 +161,141 @@ namespace Plugin.HybridWebView.Droid
 
         private async Task OnClearCookiesRequest()
         {
-            await Task.Run(() =>
-            {
-                if (Control == null) return;
+            if (Control == null) return;
 
-                if (Build.VERSION.SdkInt >= Android.OS.BuildVersionCodes.LollipopMr1)
-                {
-                    CookieManager.Instance.RemoveAllCookies(null);
-                    CookieManager.Instance.Flush();
-                }
-                else
-                {
-                    //CookieSyncManager cookieSyncMngr = CookieSyncManager.createInstance(context);
-                    CookieSyncManager cookieSyncMngr = CookieSyncManager.CreateInstance(Context);
-                    cookieSyncMngr.StartSync();
-                    CookieManager cookieManager = CookieManager.Instance;
-                    cookieManager.RemoveAllCookie();
-                    cookieManager.RemoveSessionCookie();
-                    cookieSyncMngr.StopSync();
-                    cookieSyncMngr.Sync();
-                }
-            });
+            if (Build.VERSION.SdkInt >= Android.OS.BuildVersionCodes.LollipopMr1)
+            {
+                CookieManager.Instance.RemoveAllCookies(null);
+                CookieManager.Instance.Flush();
+            }
+            else
+            {
+                //CookieSyncManager cookieSyncMngr = CookieSyncManager.createInstance(context);
+                CookieSyncManager cookieSyncMngr = CookieSyncManager.CreateInstance(Context);
+                cookieSyncMngr.StartSync();
+                CookieManager cookieManager = CookieManager.Instance;
+                cookieManager.RemoveAllCookie();
+                cookieManager.RemoveSessionCookie();
+                cookieSyncMngr.StopSync();
+                cookieSyncMngr.Sync();
+            }
         }
 
-        /* Returns all cookies for the current page */
 
-        private async Task<string> OnGetAllCookieRequest()
+        private async Task<string> OnGetAllCookieRequestAsync()
         {
             if (Control == null || Element == null) return string.Empty;
             var cookies = string.Empty;
-            await Task.Run(() =>
-            {
-                if (Control != null && Element != null)
-                {
-                    var url = Element.Source;
-                    if (Build.VERSION.SdkInt >= Android.OS.BuildVersionCodes.LollipopMr1)
-                    {
-                        CookieManager.Instance.Flush();
-                        cookies = CookieManager.Instance.GetCookie(url);
-                    }
-                    else
-                    {
-                        //CookieSyncManager cookieSyncMngr = CookieSyncManager.createInstance(context);
-                        CookieSyncManager cookieSyncMngr = CookieSyncManager.CreateInstance(Context);
-                        cookieSyncMngr.StartSync();
-                        CookieManager cookieManager = CookieManager.Instance;
-                        cookies = cookieManager.GetCookie(url);
-                    }
-                }
 
-            });
+            if (Control != null && Element != null)
+            {
+                string url = string.Empty;
+                try
+                {
+                    url = Control.Url;
+                }
+                catch (Exception e)
+                {
+                    url = Element.BaseUrl;
+                }
+                if (Build.VERSION.SdkInt >= Android.OS.BuildVersionCodes.LollipopMr1)
+                {
+                    CookieManager.Instance.Flush();
+                    cookies = CookieManager.Instance.GetCookie(url);
+                }
+                else
+                {
+                    CookieSyncManager cookieSyncMngr = CookieSyncManager.CreateInstance(Context);
+                    cookieSyncMngr.StartSync();
+                    CookieManager cookieManager = CookieManager.Instance;
+                    cookies = cookieManager.GetCookie(url);
+                }
+            }
 
             return cookies;
         }
 
-        /* Sets cookie value based on cookiename. */
-
-        private async Task OnSetCookieValueRequest(string cookieName, string cookieValue, long? duration = null)
+        private async Task<string> OnSetCookieRequestAsync(Cookie cookie)
         {
-            // wait!
-            await Task.Run(() =>
+            if (Control != null && Element != null)
             {
-                if (Control != null && Element != null)
+                var url = new Uri(Control.Url).Host;
+                if (Build.VERSION.SdkInt >= Android.OS.BuildVersionCodes.LollipopMr1)
                 {
-                    var url = Element.Source;
-                    //Console.WriteLine(Control.)
-                    if (Build.VERSION.SdkInt >= Android.OS.BuildVersionCodes.LollipopMr1)
-                    {
 
-                        CookieManager.Instance.SetCookie(url, cookieName + "=" + cookieValue);
-                        CookieManager.Instance.Flush();
-                    }
-                    else
-                    {
-                        CookieSyncManager cookieSyncMngr = CookieSyncManager.CreateInstance(Context);
-                        cookieSyncMngr.StartSync();
-                        CookieManager cookieManager = CookieManager.Instance;
-                        cookieManager.SetCookie(url, cookieName + "=" + cookieValue);
-                        cookieManager.Flush();
-                    }
+                    CookieManager.Instance.SetCookie(url, cookie.ToString());
+                    CookieManager.Instance.Flush();
                 }
+                else
+                {
+                    CookieSyncManager cookieSyncMngr = CookieSyncManager.CreateInstance(Context);
+                    cookieSyncMngr.StartSync();
+                    CookieManager cookieManager = CookieManager.Instance;
+                    cookieManager.SetCookie(url, cookie.ToString());
+                    cookieManager.Flush();
+                }
+            }
 
-            });
+            var toReturn = await OnGetCookieRequestAsync(cookie.Name);
+
+            return toReturn;
         }
 
-        /* Gets cookie value based on cookiename. */
 
-        private async Task<string> OnGetCookieValueRequest(string cookieName)
+
+        private async Task<string> OnGetCookieRequestAsync(string key)
         {
 
             var cookie = default(string);
-            // wait!
-            await Task.Run(() =>
+
+            if (Control != null && Element != null)
             {
-                if (Control != null && Element != null)
+                string url = string.Empty;
+                try
                 {
-                    var url = Element.Source;
+                    url = Control.Url;
+                }
+                catch (Exception e)
+                {
+                    url = Element.BaseUrl;
+                }
+                string cookieCollectionString;
+                string[] cookieCollection;
+
+                try
+                {
                     if (Build.VERSION.SdkInt >= Android.OS.BuildVersionCodes.LollipopMr1)
                     {
                         CookieManager.Instance.Flush();
-                        string[] cookieCollection = CookieManager.Instance.GetCookie(url).Split(new string[] { "; " }, StringSplitOptions.None);
+                        cookieCollectionString = CookieManager.Instance.GetCookie(url);
 
-                        foreach (var c in cookieCollection)
-                        {
-                            var keyValue = c.Split(new[] { '=' }, 2);
-                            if (keyValue[0] == cookieName)
-                            {
-                                cookie = keyValue[1];
-                                break;
-                            }
-                        }
                     }
                     else
                     {
-                        //CookieSyncManager cookieSyncMngr = CookieSyncManager.createInstance(context);
                         CookieSyncManager cookieSyncMngr = CookieSyncManager.CreateInstance(Context);
                         cookieSyncMngr.StartSync();
                         CookieManager cookieManager = CookieManager.Instance;
-                        string[] cookieCollection = cookieManager.GetCookie(url).Split(new string[] { "; " }, StringSplitOptions.None);
-                        foreach (var c in cookieCollection)
+                        cookieCollectionString = cookieManager.GetCookie(url);
+                    }
+                    cookieCollection = cookieCollectionString.Split(new string[] { "; " }, StringSplitOptions.None);
+
+                    foreach (var c in cookieCollection)
+                    {
+                        var keyValue = c.Split(new[] { '=' }, 2);
+                        if (keyValue.Length > 1 && keyValue[0] == key)
                         {
-                            var keyValue = c.Split(new[] { '=' }, 2);
-                            if (keyValue[0] == cookieName)
-                            {
-                                cookie = keyValue[1];
-                                break;
-                            }
+                            cookie = keyValue[1];
+                            break;
                         }
                     }
                 }
+                catch (Exception e) { }
+            }
 
-            });
 
             return cookie;
         }
+
 
         internal async Task<string> OnJavascriptInjectionRequest(string js)
         {
@@ -342,6 +351,8 @@ namespace Plugin.HybridWebView.Droid
                     LoadFromString();
                     break;
             }
+
+            SetCurrentUrl();
         }
 
         void LoadFromString()
@@ -379,7 +390,7 @@ namespace Plugin.HybridWebView.Droid
             // Add Global Headers
             if (Element.EnableGlobalHeaders)
             {
-                foreach (var header in Shared.HybridWebViewControl.GlobalRegisteredHeaders)
+                foreach (var header in HybridWebViewControl.GlobalRegisteredHeaders)
                 {
                     if (!headers.ContainsKey(header.Key))
                         headers.Add(header.Key, header.Value);
@@ -387,6 +398,31 @@ namespace Plugin.HybridWebView.Droid
             }
 
             Control.LoadUrl(Element.Source, headers);
+        }
+
+
+        private void SetCurrentUrl(object sender, DecisionHandlerDelegate e)
+        {
+            Device.BeginInvokeOnMainThread(() =>
+            {
+                Element.CurrentUrl = e.Uri;
+            });
+        }
+
+        private void SetCurrentUrl()
+        {
+            Device.BeginInvokeOnMainThread(() =>
+            {
+                Element.CurrentUrl = Control.Url;
+            });
+        }
+
+        private void SetUserAgent(object sender = null, EventArgs e = null)
+        {
+            if (Control != null && Element.UserAgent != null && Element.UserAgent.Length > 0)
+            {
+                Control.Settings.UserAgentString = Element.UserAgent;
+            }
         }
     }
 }

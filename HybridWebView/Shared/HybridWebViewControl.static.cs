@@ -24,14 +24,20 @@ namespace Plugin.HybridWebView.Shared
         /// <summary>
         /// A bindable property for the ContentType property.
         /// </summary>
-        public static readonly BindableProperty ContentTypeProperty = BindableProperty.Create(nameof(ContentType),
-            typeof(WebViewContentType), typeof(HybridWebViewControl), WebViewContentType.Internet);
+        public static readonly BindableProperty ContentTypeProperty =
+            BindableProperty.Create(nameof(ContentType), typeof(WebViewContentType), typeof(HybridWebViewControl), WebViewContentType.Internet);
 
         /// <summary>
         /// A bindable property for the BaseUrl property.
         /// </summary>
         public static readonly BindableProperty BaseUrlProperty =
             BindableProperty.Create(nameof(BaseUrl), typeof(string), typeof(HybridWebViewControl));
+
+        /// <summary>
+        /// A bindable property cor the CurrentUrl property.
+        /// </summary>
+        public static readonly BindableProperty CurrentUrlProperty =
+            BindableProperty.Create(nameof(CurrentUrl), typeof(string), typeof(HybridWebViewControl));
 
         /// <summary>
         /// A bindable property for the CanGoBack property.
@@ -65,11 +71,17 @@ namespace Plugin.HybridWebView.Shared
             BindableProperty.Create(nameof(UseWideViewPort), typeof(bool), typeof(HybridWebViewControl), false);
 
         /// <summary>
+        /// A bindable property for the UserAgent property.
+        /// </summary>
+        public static readonly BindableProperty UserAgentProperty =
+            BindableProperty.Create(nameof(UserAgent), typeof(string), typeof(HybridWebViewControl), "");
+
+        /// <summary>
         /// A dictionary used to add headers which are used throughout all instances of FormsWebView.
         /// </summary>
-        public static readonly Dictionary<string, string> GlobalRegisteredHeaders = new Dictionary<string, string>();
+        public readonly static Dictionary<string, string> GlobalRegisteredHeaders = new Dictionary<string, string>();
 
-        internal static readonly Dictionary<string, Action<string>> GlobalRegisteredCallbacks = new Dictionary<string, Action<string>>();
+        internal readonly static Dictionary<string, Action<string>> GlobalRegisteredCallbacks = new Dictionary<string, Action<string>>();
 
         /// <summary>
         /// Adds a callback to every FormsWebView available in the application.
@@ -102,6 +114,7 @@ namespace Plugin.HybridWebView.Shared
         /// Removes a callback by the function name.
         /// Note: this does not remove it from the DOM, rather it removes the action, resulting in your view never getting the response.
         /// </summary>
+        /// <param name="functionName"></param>
         public static void RemoveAllGlobalCallbacks()
         {
             GlobalRegisteredCallbacks.Clear();

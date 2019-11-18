@@ -1,18 +1,20 @@
 ﻿using System;
 using Foundation;
+using Plugin.HybridWebView.Shared;
 using WebKit;
 using UIKit;
+using Xamarin.Forms;
 
 namespace Plugin.HybridWebView.iOS
 {
     public class FormsNavigationDelegate : WKNavigationDelegate
     {
 
-        readonly WeakReference<HybridWebViewRenderer> _reference;
+        readonly WeakReference<HybridWebViewRenderer> Reference;
 
         public FormsNavigationDelegate(HybridWebViewRenderer renderer)
         {
-            _reference = new WeakReference<HybridWebViewRenderer>(renderer);
+            Reference = new WeakReference<HybridWebViewRenderer>(renderer);
         }
 
         public bool AttemptOpenCustomUrlScheme(NSUrl url)
@@ -28,8 +30,22 @@ namespace Plugin.HybridWebView.iOS
         [Export("webView:decidePolicyForNavigationAction:decisionHandler:")]
         public override void DecidePolicy(WKWebView webView, WKNavigationAction navigationAction, Action<WKNavigationActionPolicy> decisionHandler)
         {
-            if (_reference == null || !_reference.TryGetTarget(out HybridWebViewRenderer renderer)) return;
+            if (Reference == null || !Reference.TryGetTarget(out HybridWebViewRenderer renderer)) return;
             if (renderer.Element == null) return;
+
+            // If navigation target frame is null, this can mean that the link contains target="_blank". Start loadrequest to perform the navigation
+            if (navigationAction.TargetFrame == null)
+            {
+                webView.LoadRequest(navigationAction.Request);
+                return;
+            }
+            // If the navigation event originates from another frame than main (iframe?) it's not a navigation event we care about
+            if (!navigationAction.TargetFrame.MainFrame)
+            {
+                decisionHandler(WKNavigationActionPolicy.Allow);
+                return;
+            }
+
 
             var response = renderer.Element.HandleNavigationStartRequest(navigationAction.Request.Url.ToString());
 
@@ -50,7 +66,7 @@ namespace Plugin.HybridWebView.iOS
 
         public override void DecidePolicy(WKWebView webView, WKNavigationResponse navigationResponse, Action<WKNavigationResponsePolicy> decisionHandler)
         {
-            if (_reference == null || !_reference.TryGetTarget(out HybridWebViewRenderer renderer)) return;
+            if (Reference == null || !Reference.TryGetTarget(out HybridWebViewRenderer renderer)) return;
             if (renderer.Element == null) return;
 
             if (navigationResponse.Response is NSHttpUrlResponse)
@@ -69,25 +85,38 @@ namespace Plugin.HybridWebView.iOS
         }
 
         [Export("webView:didFinishNavigation:")]
-        public override async void DidFinishNavigation(WKWebView webView, WKNavigation navigation)
+        public async override void DidFinishNavigation(WKWebView webView, WKNavigation navigation)
         {
-            if (_reference == null || !_reference.TryGetTarget(out HybridWebViewRenderer renderer)) return;
+            if (Reference == null || !Reference.TryGetTarget(out HybridWebViewRenderer renderer)) return;
             if (renderer.Element == null) return;
 
             renderer.Element.HandleNavigationCompleted(webView.Url.ToString());
-            await renderer.OnJavascriptInjectionRequest(Shared.HybridWebViewControl.InjectedFunction);
+            await renderer.OnJavascriptInjectionRequest(HybridWebViewControl.InjectedFunction);
 
             if (renderer.Element.EnableGlobalCallbacks)
-                foreach (var function in Shared.HybridWebViewControl.GlobalRegisteredCallbacks)
-                    await renderer.OnJavascriptInjectionRequest(Shared.HybridWebViewControl.GenerateFunctionScript(function.Key));
+                foreach (var function in HybridWebViewControl.GlobalRegisteredCallbacks)
+                    await renderer.OnJavascriptInjectionRequest(HybridWebViewControl.GenerateFunctionScript(function.Key));
 
             foreach (var function in renderer.Element.LocalRegisteredCallbacks)
-                await renderer.OnJavascriptInjectionRequest(Shared.HybridWebViewControl.GenerateFunctionScript(function.Key));
+                await renderer.OnJavascriptInjectionRequest(HybridWebViewControl.GenerateFunctionScript(function.Key));
 
             renderer.Element.CanGoBack = webView.CanGoBack;
             renderer.Element.CanGoForward = webView.CanGoForward;
             renderer.Element.Navigating = false;
             renderer.Element.HandleContentLoaded();
         }
+
+        [Foundation.Export("webView:didStartProvisionalNavigation:")]
+        [ObjCRuntime.BindingImpl(ObjCRuntime.BindingImplOptions.GeneratedCode | ObjCRuntime.BindingImplOptions.Optimizable)]
+        public virtual void DidStartProvisionalNavigation(WKWebView webView, WKNavigation navigation)
+        {
+            if (Reference == null || !Reference.TryGetTarget(out HybridWebViewRenderer renderer)) return;
+            if (renderer.Element == null) return;
+            Device.BeginInvokeOnMainThread(() =>
+            {
+                renderer.Element.CurrentUrl = webView.Url.ToString();
+            });
+        }
+
     }
 }

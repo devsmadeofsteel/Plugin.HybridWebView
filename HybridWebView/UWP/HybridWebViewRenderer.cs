@@ -2,11 +2,14 @@
 using Plugin.HybridWebView.Shared.Enumerations;
 using Plugin.HybridWebView.UWP;
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
+using Windows.Security.Cryptography.Certificates;
 using Windows.UI.Xaml.Controls;
 using Windows.Web.Http;
 using Windows.Web.Http.Filters;
+using Xamarin.Forms;
 using Xamarin.Forms.Platform.UWP;
 
 
@@ -18,9 +21,7 @@ namespace Plugin.HybridWebView.UWP
     /// </summary>
     public class HybridWebViewRenderer : ViewRenderer<Shared.HybridWebViewControl, Windows.UI.Xaml.Controls.WebView>
     {
-
         public static event EventHandler<Windows.UI.Xaml.Controls.WebView> OnControlChanged;
-        private CookieCollection _cookieCollection = new CookieCollection();
 
         public static string BaseUrl { get; set; } = "ms-appx:///";
         LocalFileStreamResolver _resolver;
@@ -30,7 +31,8 @@ namespace Plugin.HybridWebView.UWP
             var dt = DateTime.Now;
         }
 
-        protected override void OnElementChanged(ElementChangedEventArgs<Shared.HybridWebViewControl> e)
+
+        protected override void OnElementChanged(ElementChangedEventArgs<HybridWebViewControl> e)
         {
             base.OnElementChanged(e);
 
@@ -49,9 +51,9 @@ namespace Plugin.HybridWebView.UWP
             element.PropertyChanged += OnWebViewPropertyChanged;
             element.OnJavascriptInjectionRequest += OnJavascriptInjectionRequestAsync;
             element.OnClearCookiesRequested += OnClearCookiesRequest;
-            element.OnGetCookieValueRequested += OnGetCookieRequest;
-            element.OnGetAllCookiesRequested += OnGetAllCookieRequest;
-            element.OnSetCookieValueRequested += OnSetCookieRequest;
+            element.OnGetAllCookiesRequestedAsync += OnGetAllCookieRequestAsync;
+            element.OnGetCookieRequestedAsync += OnGetCookieRequestAsync;
+            element.OnSetCookieRequestedAsync += OnSetCookieRequestAsync;
             element.OnBackRequested += OnBackRequested;
             element.OnForwardRequested += OnForwardRequested;
             element.OnRefreshRequested += OnRefreshRequested;
@@ -64,10 +66,10 @@ namespace Plugin.HybridWebView.UWP
             element.PropertyChanged -= OnWebViewPropertyChanged;
             element.OnJavascriptInjectionRequest -= OnJavascriptInjectionRequestAsync;
             element.OnClearCookiesRequested -= OnClearCookiesRequest;
-            element.OnGetAllCookiesRequested -= OnGetAllCookieRequest;
-            element.OnGetCookieValueRequested -= OnGetCookieRequest;
-            element.OnSetCookieValueRequested -= OnSetCookieRequest;
             element.OnBackRequested -= OnBackRequested;
+            element.OnGetAllCookiesRequestedAsync -= OnGetAllCookieRequestAsync;
+            element.OnGetCookieRequestedAsync -= OnGetCookieRequestAsync;
+            element.OnSetCookieRequestedAsync -= OnSetCookieRequestAsync;
             element.OnForwardRequested -= OnForwardRequested;
             element.OnRefreshRequested -= OnRefreshRequested;
 
@@ -81,11 +83,12 @@ namespace Plugin.HybridWebView.UWP
 
             SetNativeControl(control);
 
-            Shared.HybridWebViewControl.CallbackAdded += OnCallbackAdded;
+            HybridWebViewControl.CallbackAdded += OnCallbackAdded;
             Control.NavigationStarting += OnNavigationStarting;
             Control.NavigationCompleted += OnNavigationCompleted;
             Control.DOMContentLoaded += OnDOMContentLoaded;
             Control.ScriptNotify += OnScriptNotify;
+            Control.LoadCompleted += SetCurrentUrl;
             Control.DefaultBackgroundColor = Windows.UI.Colors.Transparent;
 
             OnControlChanged?.Invoke(this, control);
@@ -124,11 +127,44 @@ namespace Plugin.HybridWebView.UWP
 
         void OnNavigationStarting(Windows.UI.Xaml.Controls.WebView sender, WebViewNavigationStartingEventArgs args)
         {
+
             if (Element == null) return;
+
 
             Element.Navigating = true;
             var handler = Element.HandleNavigationStartRequest(args.Uri != null ? args.Uri.AbsoluteUri : Element.Source);
             args.Cancel = handler.Cancel;
+
+            // Try to handle cases with custom user agent. This is kinda not supported by the UWP web-view
+            // https://stackoverflow.com/questions/39490430/change-default-user-agent-in-webview-uwp
+            if (Element.UserAgent != null && Element.UserAgent.Length > 0)
+            {
+                // Unsubscribe to avoid eternal loop
+                Control.NavigationStarting -= OnNavigationStarting;
+                // Cancel navigation, we need to start a new custom one to add the user agent
+                args.Cancel = true;
+                NavigateWithCustomUserAgent(args, Element.UserAgent);
+            }
+        }
+
+        private void NavigateWithCustomUserAgent(WebViewNavigationStartingEventArgs args, string userAgent)
+        {
+            try
+            {
+                // Create new request with custom user agent
+                var requestMsg = new Windows.Web.Http.HttpRequestMessage(HttpMethod.Get, args.Uri);
+                requestMsg.Headers.Add("User-Agent", userAgent);
+                Control.NavigateWithHttpRequestMessage(requestMsg);
+            }
+            catch (Exception e)
+            {
+                throw;
+            }
+            finally
+            {
+                // Re-subscribe after navigating
+                Control.NavigationStarting += OnNavigationStarting;
+            }
         }
 
         void OnNavigationCompleted(Windows.UI.Xaml.Controls.WebView sender, WebViewNavigationCompletedEventArgs args)
@@ -137,22 +173,6 @@ namespace Plugin.HybridWebView.UWP
 
             if (!args.IsSuccess)
                 Element.HandleNavigationError((int)args.WebErrorStatus);
-
-            /* Setting cookies */
-            var filter = new HttpBaseProtocolFilter();
-            HttpClient client = new HttpClient(filter);
-            HttpCookieCollection httpCookieCollection = filter.CookieManager.GetCookies(args.Uri);
-            //httpCookieCollection.
-            // Use this, while it comes from an instance, its shared across everything.
-            foreach (var cookie in httpCookieCollection)
-            {
-                _cookieCollection.Add(new Cookie
-                {
-                    Domain = cookie.Domain,
-                    Name = cookie.Name,
-                    Value = cookie.Value
-                });
-            }
 
             Element.CanGoBack = Control.CanGoBack;
             Element.CanGoForward = Control.CanGoForward;
@@ -166,16 +186,16 @@ namespace Plugin.HybridWebView.UWP
             if (Element == null) return;
 
             // Add Injection Function
-            await Control.InvokeScriptAsync("eval", new[] { Shared.HybridWebViewControl.InjectedFunction });
+            await Control.InvokeScriptAsync("eval", new[] { HybridWebViewControl.InjectedFunction });
 
             // Add Global Callbacks
             if (Element.EnableGlobalCallbacks)
-                foreach (var callback in Shared.HybridWebViewControl.GlobalRegisteredCallbacks)
-                    await Control.InvokeScriptAsync("eval", new[] { Shared.HybridWebViewControl.GenerateFunctionScript(callback.Key) });
+                foreach (var callback in HybridWebViewControl.GlobalRegisteredCallbacks)
+                    await Control.InvokeScriptAsync("eval", new[] { HybridWebViewControl.GenerateFunctionScript(callback.Key) });
 
             // Add Local Callbacks
             foreach (var callback in Element.LocalRegisteredCallbacks)
-                await Control.InvokeScriptAsync("eval", new[] { Shared.HybridWebViewControl.GenerateFunctionScript(callback.Key) });
+                await Control.InvokeScriptAsync("eval", new[] { HybridWebViewControl.GenerateFunctionScript(callback.Key) });
 
             Element.HandleContentLoaded();
         }
@@ -185,7 +205,7 @@ namespace Plugin.HybridWebView.UWP
             if (Element == null || string.IsNullOrWhiteSpace(e)) return;
 
             if ((sender == null && Element.EnableGlobalCallbacks) || sender != null)
-                await OnJavascriptInjectionRequestAsync(Shared.HybridWebViewControl.GenerateFunctionScript(e));
+                await OnJavascriptInjectionRequestAsync(HybridWebViewControl.GenerateFunctionScript(e));
         }
 
         void OnScriptNotify(object sender, NotifyEventArgs e)
@@ -198,48 +218,82 @@ namespace Plugin.HybridWebView.UWP
         {
             if (Control == null) return;
 
+
             // This clears all tmp. data. Not only cookies
             await Windows.UI.Xaml.Controls.WebView.ClearTemporaryWebDataAsync();
         }
 
-        private Task<string> OnGetAllCookieRequest()
+        private async Task<string> OnGetAllCookieRequestAsync()
         {
-            var cookies = string.Empty;
-            var cont = 0;
+            if (Control == null || Element == null) return string.Empty;
+            var domain = (new Uri(Element.Source)).Host;
+            var cookie = string.Empty;
+            var url = new Uri(Element.Source);
 
-            if (_cookieCollection?.Count > 0)
+            HttpBaseProtocolFilter filter = new HttpBaseProtocolFilter();
+            var cookieManager = filter.CookieManager;
+            HttpCookieCollection cookieCollection = cookieManager.GetCookies(url);
+
+            foreach (HttpCookie currentCookie in cookieCollection)
             {
-                foreach (Cookie cookie in _cookieCollection)
-                {
-                    cookies += (cont == 0 ? "" : ";") + $"{cookie.Name}={cookie.Value}";
-                    cont++;
-                }
+                cookie += currentCookie.Name + "=" + currentCookie.Value + "; ";
             }
 
-            return Task.FromResult(cookies);
+            if (cookie.Length > 2)
+            {
+                cookie = cookie.Remove(cookie.Length - 2);
+            }
+            return cookie;
         }
 
-        private Task<string> OnGetCookieRequest(string cookieName)
+        private async Task<string> OnGetCookieRequestAsync(string key)
         {
-            if (Control == null || Element == null) return Task.FromResult(string.Empty);
-
+            if (Control == null || Element == null) return string.Empty;
+            var url = new Uri(Element.Source);
+            var domain = (new Uri(Element.Source)).Host;
             var cookie = string.Empty;
-            foreach (Cookie currentCookie in _cookieCollection)
+
+            HttpBaseProtocolFilter filter = new HttpBaseProtocolFilter();
+            var cookieManager = filter.CookieManager;
+            HttpCookieCollection cookieCollection = cookieManager.GetCookies(url);
+
+            foreach (HttpCookie currentCookie in cookieCollection)
             {
-                if (currentCookie.Name == cookieName)
+                if (key == currentCookie.Name)
                 {
                     cookie = currentCookie.Value;
                     break;
                 }
             }
-            // This clears all tmp. data. Not only cookies
-            //await Windows.UI.Xaml.Controls.WebView.ClearTemporaryWebDataAsync();
-            return Task.FromResult(cookie);
+
+            return cookie;
         }
 
-        private Task OnSetCookieRequest(string cookieName, string cookieValue, long? duration = null)
+        private async Task<string> OnSetCookieRequestAsync(Cookie cookie)
         {
-            throw new NotImplementedException();
+            if (Control == null || Element == null) return string.Empty;
+            var url = new Uri(Element.Source);
+            var newCookie = new HttpCookie(cookie.Name, cookie.Domain, cookie.Path);
+            newCookie.Value = cookie.Value;
+            newCookie.HttpOnly = cookie.HttpOnly;
+            newCookie.Secure = cookie.Secure;
+            newCookie.Expires = cookie.Expires;
+
+            List<HttpCookie> cookieCollection = new List<HttpCookie>();
+            HttpBaseProtocolFilter filter = new HttpBaseProtocolFilter();
+            HttpClient httpClient;
+            filter.IgnorableServerCertificateErrors.Add(ChainValidationResult.Untrusted);
+            filter.IgnorableServerCertificateErrors.Add(ChainValidationResult.Expired);
+            foreach (HttpCookie knownCookie in cookieCollection)
+            {
+                filter.CookieManager.SetCookie(knownCookie);
+            }
+
+            filter.CookieManager.SetCookie(newCookie);
+            httpClient = new HttpClient(filter);
+
+            return await OnGetCookieRequestAsync(cookie.Name);
+
         }
 
         async Task<string> OnJavascriptInjectionRequestAsync(string js)
@@ -283,7 +337,7 @@ namespace Plugin.HybridWebView.UWP
             // Add Global Headers
             if (Element.EnableGlobalHeaders)
             {
-                foreach (var header in Shared.HybridWebViewControl.GlobalRegisteredHeaders)
+                foreach (var header in HybridWebViewControl.GlobalRegisteredHeaders)
                 {
                     if (!requestMsg.Headers.ContainsKey(header.Key))
                         requestMsg.Headers.Add(header.Key, header.Value);
@@ -316,6 +370,13 @@ namespace Plugin.HybridWebView.UWP
                 color = Xamarin.Forms.Color.Transparent;
 
             return Windows.UI.Color.FromArgb(Convert.ToByte(color.A * 255), Convert.ToByte(color.R * 255), Convert.ToByte(color.G * 255), Convert.ToByte(color.B * 255));
+        }
+        private void SetCurrentUrl(object sender, Windows.UI.Xaml.Navigation.NavigationEventArgs e)
+        {
+            Device.BeginInvokeOnMainThread(() =>
+            {
+                Element.CurrentUrl = e.Uri.ToString();
+            });
         }
     }
 }

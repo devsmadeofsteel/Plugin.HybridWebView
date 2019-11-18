@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net;
 using System.Threading.Tasks;
 using Plugin.HybridWebView.Shared.Delegates;
 using Plugin.HybridWebView.Shared.Enumerations;
@@ -20,6 +21,8 @@ namespace Plugin.HybridWebView.Shared
         string Source { get; set; }
 
         string BaseUrl { get; set; }
+
+        string CurrentUrl { get; set; }
 
         bool EnableGlobalCallbacks { get; set; }
 
@@ -45,8 +48,8 @@ namespace Plugin.HybridWebView.Shared
 
         void RemoveAllLocalCallbacks();
         Task ClearCookiesAsync();
-        Task<string> GetAllCookiesValueAsync();
-        Task<string> GetCookieValueAsync(string cookieName);
-        Task SetCookieValueAsync(string cookieName, string cookieValue, long? duration = null);
+        Task<string> GetAllCookiesAsync();
+        Task<string> GetCookieAsync(string key);
+        Task<string> SetCookieAsync(Cookie cookie);
     }
 }
