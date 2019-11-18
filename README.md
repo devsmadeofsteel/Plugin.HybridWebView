@@ -53,7 +53,8 @@ Unfortunately for Xamarin, generally the only common HybridWebView is included a
 
 
 ## Setup
-* NuGET package available here: https://www.nuget.org/packages/Xam.Plugin.WebView
+
+* NuGET package available here: https://www.nuget.org/packages/Plugin.HybridWebView/
 * Install into both your PCL and Platform projects
 * On Android, include the Android.Mono.Export reference for the Javascript Interface
 
