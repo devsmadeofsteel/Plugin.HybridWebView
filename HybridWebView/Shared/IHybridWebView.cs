@@ -33,6 +33,7 @@ namespace Plugin.HybridWebView.Shared
         bool CanGoBack { get; }
 
         bool CanGoForward { get; }
+        bool AllowUniversalAccessFromFileURLs { get; }
 
         void GoBack();
 

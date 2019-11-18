@@ -11,6 +11,5 @@ namespace Plugin.HybridWebView.Droid
         {
             _reference = new WeakReference<HybridWebViewRenderer>(renderer);
         }
-
     }
 }

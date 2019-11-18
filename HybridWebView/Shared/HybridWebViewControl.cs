@@ -170,6 +170,15 @@ namespace Plugin.HybridWebView.Shared
             internal set => SetValue(CanGoForwardProperty, value);
         }
 
+        /// <summary>
+        /// Allow access JS from any source
+        /// </summary>
+        public bool AllowUniversalAccessFromFileURLs
+        {
+            get => (bool) GetValue(AllowUniversalAccessFromFileURLsProperty);
+            internal set => SetValue(AllowUniversalAccessFromFileURLsProperty, value);
+        }
+
         public bool UseWideViewPort
         {
             get => (bool)GetValue(UseWideViewPortProperty);

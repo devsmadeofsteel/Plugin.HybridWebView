@@ -159,6 +159,10 @@ namespace Plugin.HybridWebView.Droid
                 case "Source":
                     SetSource();
                     break;
+                case nameof(HybridWebViewControl.AllowUniversalAccessFromFileURLs):
+                    if (Control != null && Element != null)
+                        Control.Settings.AllowUniversalAccessFromFileURLs = Element.AllowUniversalAccessFromFileURLs;
+                    break;
             }
         }
 

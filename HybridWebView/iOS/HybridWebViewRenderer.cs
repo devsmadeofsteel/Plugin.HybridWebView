@@ -22,7 +22,7 @@ namespace Plugin.HybridWebView.iOS
     {
         public static event EventHandler<WKWebView> OnControlChanged;
 
-        public static string BaseUrl { get; set; } = NSBundle.MainBundle.BundlePath;
+        public static string BaseUrl { get; set; } = $"{NSBundle.MainBundle.BundlePath}/";
 
         private HybridWebViewNavigationDelegate _navigationDelegate;
 

@@ -83,6 +83,13 @@ namespace Plugin.HybridWebView.Shared
 
         internal readonly static Dictionary<string, Action<string>> GlobalRegisteredCallbacks = new Dictionary<string, Action<string>>();
 
+
+        /// <summary>
+        /// A bindable property for the AllowUniversalAccessFromFileURLs property.
+        /// </summary>
+        public static readonly BindableProperty AllowUniversalAccessFromFileURLsProperty =
+            BindableProperty.Create(nameof(CanGoForward), typeof(bool), typeof(HybridWebViewControl), false);
+
         /// <summary>
         /// Adds a callback to every FormsWebView available in the application.
         /// </summary>
