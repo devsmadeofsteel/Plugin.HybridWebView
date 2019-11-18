@@ -28,6 +28,7 @@ namespace Plugin.HybridWebView.UWP
 
         public static void Initialize()
         {
+            // ReSharper disable once UnusedVariable
             var dt = DateTime.Now;
         }
 

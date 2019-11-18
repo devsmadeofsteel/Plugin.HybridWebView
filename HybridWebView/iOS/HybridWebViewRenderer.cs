@@ -32,6 +32,7 @@ namespace Plugin.HybridWebView.iOS
 
         public static void Initialize()
         {
+            // ReSharper disable once UnusedVariable
             var dt = DateTime.Now;
         }
 
