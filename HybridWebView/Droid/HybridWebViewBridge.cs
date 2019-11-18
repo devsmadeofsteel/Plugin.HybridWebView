@@ -4,11 +4,11 @@ using System;
 
 namespace Plugin.HybridWebView.Droid
 {
-    public class FormsWebViewBridge : Java.Lang.Object
+    public class HybridWebViewBridge : Java.Lang.Object
     {
         private readonly WeakReference<HybridWebViewRenderer> _reference;
 
-        public FormsWebViewBridge(HybridWebViewRenderer renderer)
+        public HybridWebViewBridge(HybridWebViewRenderer renderer)
         {
             _reference = new WeakReference<HybridWebViewRenderer>(renderer);
         }

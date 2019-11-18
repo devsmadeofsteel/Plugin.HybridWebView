@@ -3,11 +3,11 @@ using Android.Webkit;
 
 namespace Plugin.HybridWebView.Droid
 {
-    public class FormsWebViewChromeClient : WebChromeClient
+    public class HybridWebViewChromeClient : WebChromeClient
     {
         private readonly WeakReference<HybridWebViewRenderer> _reference;
 
-        public FormsWebViewChromeClient(HybridWebViewRenderer renderer)
+        public HybridWebViewChromeClient(HybridWebViewRenderer renderer)
         {
             _reference = new WeakReference<HybridWebViewRenderer>(renderer);
         }

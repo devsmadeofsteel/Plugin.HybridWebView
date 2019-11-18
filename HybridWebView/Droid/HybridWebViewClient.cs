@@ -8,11 +8,11 @@ using Plugin.HybridWebView.Shared;
 
 namespace Plugin.HybridWebView.Droid
 {
-    public class FormsWebViewClient : WebViewClient
+    public class HybridWebViewClient : WebViewClient
     {
         private readonly WeakReference<HybridWebViewRenderer> _reference;
 
-        public FormsWebViewClient(HybridWebViewRenderer renderer)
+        public HybridWebViewClient(HybridWebViewRenderer renderer)
         {
             _reference = new WeakReference<HybridWebViewRenderer>(renderer);
         }

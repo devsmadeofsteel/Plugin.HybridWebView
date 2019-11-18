@@ -24,7 +24,7 @@ namespace Plugin.HybridWebView.iOS
 
         public static string BaseUrl { get; set; } = NSBundle.MainBundle.BundlePath;
 
-        private FormsNavigationDelegate _navigationDelegate;
+        private HybridWebViewNavigationDelegate _navigationDelegate;
 
         private WKWebViewConfiguration _configuration;
 
@@ -84,7 +84,7 @@ namespace Plugin.HybridWebView.iOS
 
         private void SetupControl()
         {
-            _navigationDelegate = new FormsNavigationDelegate(this);
+            _navigationDelegate = new HybridWebViewNavigationDelegate(this);
             _contentController = new WKUserContentController();
             _contentController.AddScriptMessageHandler(this, "invokeAction");
             _configuration = new WKWebViewConfiguration

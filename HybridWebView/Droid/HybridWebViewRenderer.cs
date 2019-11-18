@@ -112,9 +112,9 @@ namespace Plugin.HybridWebView.Droid
             webView.Settings.DomStorageEnabled = true;
 
 
-            webView.AddJavascriptInterface(new FormsWebViewBridge(this), "bridge");
-            webView.SetWebViewClient(new FormsWebViewClient(this));
-            webView.SetWebChromeClient(new FormsWebViewChromeClient(this));
+            webView.AddJavascriptInterface(new HybridWebViewBridge(this), "bridge");
+            webView.SetWebViewClient(new HybridWebViewClient(this));
+            webView.SetWebChromeClient(new HybridWebViewChromeClient(this));
             webView.SetBackgroundColor(Android.Graphics.Color.Transparent);
 
             HybridWebViewControl.CallbackAdded += OnCallbackAdded;
