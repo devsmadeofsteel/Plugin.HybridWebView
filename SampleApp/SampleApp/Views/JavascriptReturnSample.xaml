@@ -1,0 +1,34 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="SampleApp.Views.JavascriptReturnSample"
+    xmlns="http://xamarin.com/schemas/2014/forms"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:d="http://xamarin.com/schemas/2014/forms/design"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:webview="clr-namespace:Plugin.HybridWebView.Shared;assembly=Plugin.HybridWebView"
+    Title="Javascript return sample"
+    mc:Ignorable="d">
+    <ContentPage.Content>
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="50" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <webview:HybridWebViewControl
+                x:Name="TestWebview"
+                Grid.Row="0"
+                Grid.Column="0"
+                ContentType="LocalFile"
+                Source="Sample2.html" />
+            <Button
+                Grid.Row="1"
+                Grid.Column="0"
+                Clicked="Button_Clicked"
+                Text="Fire JS event" />
+        </Grid>
+    </ContentPage.Content>
+</ContentPage>

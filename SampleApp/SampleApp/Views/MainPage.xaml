@@ -1,11 +1,46 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="SampleApp.Views.MainPage"
-             Title="{Binding Title}">
+<ContentPage
+    x:Class="SampleApp.Views.MainPage"
+    xmlns="http://xamarin.com/schemas/2014/forms"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="{Binding Title}">
 
-    <StackLayout HorizontalOptions="CenterAndExpand" VerticalOptions="CenterAndExpand">
-        <Label Text="Welcome to Xamarin Forms and Prism!" />
+    <StackLayout
+        x:Name="ContainerLayout"
+        Padding="25,25,25,25"
+        BackgroundColor="#2f2f2f"
+        HorizontalOptions="FillAndExpand"
+        VerticalOptions="FillAndExpand">
+        <Label
+            FontAttributes="Bold"
+            FontSize="30"
+            HorizontalOptions="FillAndExpand"
+            HorizontalTextAlignment="Center"
+            Text="Welcome to Plugin.HybridWebView"
+            TextColor="#f2f2f2" />
+        <Label
+            FontSize="12"
+            HorizontalOptions="FillAndExpand"
+            HorizontalTextAlignment="Center"
+            Text="Click an item to try it"
+            TextColor="#f2f2f2" />
+
+        <ListView
+            x:Name="ItemList"
+            BackgroundColor="#2f2f2f"
+            HorizontalOptions="FillAndExpand"
+            ItemSelected="OnItemSelected"
+            VerticalOptions="FillAndExpand">
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <TextCell
+                        Detail="{Binding Detail}"
+                        DetailColor="#a2a2a2"
+                        Text="{Binding Title}"
+                        TextColor="#f2f2f2" />
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
     </StackLayout>
 
 </ContentPage>

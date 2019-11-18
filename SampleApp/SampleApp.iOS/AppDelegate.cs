@@ -1,4 +1,5 @@
 ﻿using Foundation;
+using Plugin.HybridWebView.iOS;
 using Prism;
 using Prism.Ioc;
 using UIKit;
@@ -21,6 +22,8 @@ namespace SampleApp.iOS
         //
         public override bool FinishedLaunching(UIApplication app, NSDictionary options)
         {
+            HybridWebViewRenderer.Initialize();
+
             global::Xamarin.Forms.Forms.Init();
             LoadApplication(new App(new iOSInitializer()));
 

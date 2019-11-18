@@ -1,0 +1,41 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="SampleApp.Views.ScrollToSample"
+    xmlns="http://xamarin.com/schemas/2014/forms"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:d="http://xamarin.com/schemas/2014/forms/design"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:webview="clr-namespace:Plugin.HybridWebView.Shared;assembly=Plugin.HybridWebView"
+    Title="Scroll to sample"
+    mc:Ignorable="d">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="50" />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <webview:HybridWebViewControl
+            x:Name="SampleWebview"
+            Grid.Row="0"
+            Grid.Column="0"
+            Grid.ColumnSpan="2"
+            Source="https://www.xamarin.com" />
+        <Button
+            x:Name="ScrollUpButton"
+            Grid.Row="1"
+            Grid.Column="0"
+            Clicked="ScrollUpButtonClicked"
+            Text="Scroll Down" />
+        <Button
+            x:Name="ScrollDownButton"
+            Grid.Row="1"
+            Grid.Column="1"
+            Clicked="ScrollDownButtonClicked"
+            Text="Scroll Up" />
+
+    </Grid>
+</ContentPage>

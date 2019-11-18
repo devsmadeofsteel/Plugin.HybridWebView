@@ -202,5 +202,11 @@
       <Name>SampleApp</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <BundleResource Include="Resources\Sample.html" />
+  </ItemGroup>
+  <ItemGroup>
+    <BundleResource Include="Resources\Sample2.html" />
+  </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\iOS\Xamarin.iOS.CSharp.targets" />
 </Project>

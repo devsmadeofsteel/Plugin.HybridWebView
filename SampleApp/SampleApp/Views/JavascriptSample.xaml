@@ -1,0 +1,61 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="SampleApp.Views.JavascriptSample"
+    xmlns="http://xamarin.com/schemas/2014/forms"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:d="http://xamarin.com/schemas/2014/forms/design"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:webview="clr-namespace:Plugin.HybridWebView.Shared;assembly=Plugin.HybridWebView"
+    Title="Javascript Local Sample"
+    mc:Ignorable="d">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="40" />
+            <RowDefinition Height="40" />
+            <RowDefinition Height="40" />
+        </Grid.RowDefinitions>
+
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="125" />
+        </Grid.ColumnDefinitions>
+
+        <webview:HybridWebViewControl
+            x:Name="WebContent"
+            Grid.Row="0"
+            Grid.Column="0"
+            Grid.ColumnSpan="2"
+            ContentType="LocalFile"
+            Source="Sample2.html" />
+
+        <Entry
+            x:Name="InjectionText"
+            Grid.Row="1"
+            Grid.Column="0" />
+        <Entry
+            x:Name="GlobalText"
+            Grid.Row="2"
+            Grid.Column="0" />
+        <Entry
+            x:Name="LocalText"
+            Grid.Row="3"
+            Grid.Column="0" />
+
+        <Button
+            Grid.Row="1"
+            Grid.Column="1"
+            Clicked="OnInjectionClicked"
+            Text="Inject" />
+        <Button
+            Grid.Row="2"
+            Grid.Column="1"
+            Clicked="GlobalCallbackClicked"
+            Text="Global Callback" />
+        <Button
+            Grid.Row="3"
+            Grid.Column="1"
+            Clicked="LocalCallbackClicked"
+            Text="Local Callback" />
+    </Grid>
+</ContentPage>

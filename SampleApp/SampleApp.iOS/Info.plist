@@ -28,6 +28,11 @@
     <string>com.companyname.appname</string>
     <key>CFBundleVersion</key>
     <string>1.0</string>
+    <key>NSAppTransportSecurity</key>
+    <dict>
+      <key> NSAllowsArbitraryLoadsInWebContent</key>
+      <true/>
+    </dict>
     <key>CFBundleIconFiles</key>
     <array>
       <string>Icon-60@2x</string>

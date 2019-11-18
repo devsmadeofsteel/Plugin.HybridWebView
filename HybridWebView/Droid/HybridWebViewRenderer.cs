@@ -318,7 +318,17 @@ namespace Plugin.HybridWebView.Droid
 
             var response = string.Empty;
 
-            Device.BeginInvokeOnMainThread(() => Control.EvaluateJavascript(js, _callback));
+            Device.BeginInvokeOnMainThread(() =>
+            {
+                try
+                {
+                    Control.EvaluateJavascript(js, _callback);
+                }
+                catch (Exception)
+                {
+                    //ignore
+                }
+            });
 
             // wait!
             await Task.Run(() =>

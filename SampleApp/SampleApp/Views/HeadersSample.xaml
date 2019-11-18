@@ -1,0 +1,74 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="SampleApp.Views.HeadersSample"
+    xmlns="http://xamarin.com/schemas/2014/forms"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:d="http://xamarin.com/schemas/2014/forms/design"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:webview="clr-namespace:Plugin.HybridWebView.Shared;assembly=Plugin.HybridWebView"
+    Title="HeadersSample"
+    mc:Ignorable="d">
+    <Grid>
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="40" />
+            <RowDefinition Height="40" />
+            <RowDefinition Height="40" />
+        </Grid.RowDefinitions>
+
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="100" />
+        </Grid.ColumnDefinitions>
+
+        <webview:HybridWebViewControl
+            x:Name="WebContent"
+            Grid.Row="0"
+            Grid.Column="0"
+            Grid.ColumnSpan="3"
+            ContentType="Internet"
+            Source="https://httpbin.org/headers" />
+
+        <Entry
+            x:Name="GlobalKey"
+            Grid.Row="1"
+            Grid.Column="0"
+            Placeholder="Global Key" />
+        <Entry
+            x:Name="GlobalValue"
+            Grid.Row="1"
+            Grid.Column="1"
+            Placeholder="Global Value" />
+
+        <Entry
+            x:Name="LocalKey"
+            Grid.Row="2"
+            Grid.Column="0"
+            Placeholder="Local Key" />
+        <Entry
+            x:Name="LocalValue"
+            Grid.Row="2"
+            Grid.Column="1"
+            Placeholder="Local Value" />
+
+        <Button
+            Grid.Row="1"
+            Grid.Column="2"
+            Clicked="OnGlobalAdd"
+            Text="Add Global" />
+        <Button
+            Grid.Row="2"
+            Grid.Column="2"
+            Clicked="OnLocalAdd"
+            Text="Add Local" />
+        <Button
+            Grid.Row="3"
+            Grid.Column="0"
+            Grid.ColumnSpan="3"
+            Clicked="OnReloadClicked"
+            Text="Reload" />
+
+    </Grid>
+</ContentPage>

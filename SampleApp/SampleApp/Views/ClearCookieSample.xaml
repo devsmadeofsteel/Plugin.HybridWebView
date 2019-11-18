@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="SampleApp.Views.ClearCookieSample"
+    xmlns="http://xamarin.com/schemas/2014/forms"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:d="http://xamarin.com/schemas/2014/forms/design"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:webview="clr-namespace:Plugin.HybridWebView.Shared;assembly=Plugin.HybridWebView"
+    Title="Clear Cookie"
+    mc:Ignorable="d">
+    <StackLayout Orientation="Vertical">
+        <webview:HybridWebViewControl
+            x:Name="localContent"
+            HorizontalOptions="FillAndExpand"
+            Source="https://kristofferberge.github.io/Xam.Plugin.Webview/html/cookietest.html"
+            VerticalOptions="FillAndExpand" />
+
+        <Button
+            Clicked="ClearCookiesClicked"
+            HorizontalOptions="End"
+            Text="ClearAllCookies" />
+        <Button
+            Clicked="OnRefreshPageClicked"
+            HorizontalOptions="End"
+            Text="Refresh page" />
+    </StackLayout>
+</ContentPage>
