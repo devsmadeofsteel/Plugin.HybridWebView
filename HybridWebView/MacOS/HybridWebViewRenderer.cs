@@ -20,11 +20,11 @@ namespace Plugin.HybridWebView.macOS
 
         public static string BaseUrl { get; set; } = NSBundle.MainBundle.ResourcePath;
 
-        FormsNavigationDelegate _navigationDelegate;
+        private FormsNavigationDelegate _navigationDelegate;
 
-        WKWebViewConfiguration _configuration;
+        private WKWebViewConfiguration _configuration;
 
-        WKUserContentController _contentController;
+        private WKUserContentController _contentController;
 
         public static void Initialize()
         {
@@ -45,7 +45,7 @@ namespace Plugin.HybridWebView.macOS
                 DestroyElement(e.OldElement);
         }
 
-        void SetupElement(HybridWebViewControl element)
+        private void SetupElement(HybridWebViewControl element)
         {
             element.PropertyChanged += OnPropertyChanged;
             element.OnJavascriptInjectionRequest += OnJavascriptInjectionRequest;
@@ -61,7 +61,7 @@ namespace Plugin.HybridWebView.macOS
             SetSource();
         }
 
-        void DestroyElement(HybridWebViewControl element)
+        private void DestroyElement(HybridWebViewControl element)
         {
             element.PropertyChanged -= OnPropertyChanged;
             element.OnJavascriptInjectionRequest -= OnJavascriptInjectionRequest;
@@ -77,7 +77,7 @@ namespace Plugin.HybridWebView.macOS
             element.Dispose();
         }
 
-        void SetupControl()
+        private void SetupControl()
         {
             _navigationDelegate = new FormsNavigationDelegate(this);
             _contentController = new WKUserContentController();
@@ -101,7 +101,7 @@ namespace Plugin.HybridWebView.macOS
             OnControlChanged?.Invoke(this, wkWebView);
         }
 
-        async void OnCallbackAdded(object sender, string e)
+        private async void OnCallbackAdded(object sender, string e)
         {
             if (Element == null || string.IsNullOrWhiteSpace(e))
                 return;
@@ -110,7 +110,7 @@ namespace Plugin.HybridWebView.macOS
                 await OnJavascriptInjectionRequest(HybridWebViewControl.GenerateFunctionScript(e));
         }
 
-        void OnPropertyChanged(object sender, PropertyChangedEventArgs e)
+        private void OnPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             switch (e.PropertyName)
             {
@@ -133,8 +133,8 @@ namespace Plugin.HybridWebView.macOS
             }
 
             var url = new Uri(Element.Source);
-            NSHttpCookie[] sharedCookies = NSHttpCookieStorage.SharedStorage.CookiesForUrl(url);
-            foreach (NSHttpCookie c in sharedCookies)
+            var sharedCookies = NSHttpCookieStorage.SharedStorage.CookiesForUrl(url);
+            foreach (var c in sharedCookies)
             {
                 NSHttpCookieStorage.SharedStorage.DeleteCookie(c);
             }
@@ -166,7 +166,7 @@ namespace Plugin.HybridWebView.macOS
             return toReturn;
         }
 
-        async Task<string> OnGetAllCookiesRequestAsync()
+        private async Task<string> OnGetAllCookiesRequestAsync()
         {
             if (Control == null || Element == null)
             {
@@ -175,8 +175,8 @@ namespace Plugin.HybridWebView.macOS
             var cookieCollection = string.Empty;
             var url = Control.Url;
 
-            NSHttpCookie[] sharedCookies = NSHttpCookieStorage.SharedStorage.CookiesForUrl(url);
-            foreach (NSHttpCookie c in sharedCookies)
+            var sharedCookies = NSHttpCookieStorage.SharedStorage.CookiesForUrl(url);
+            foreach (var c in sharedCookies)
             {
                 if (c.Domain == url.Host)
                 {
@@ -219,8 +219,8 @@ namespace Plugin.HybridWebView.macOS
                     return c.Value;
             }
 
-            NSHttpCookie[] sharedCookies = NSHttpCookieStorage.SharedStorage.CookiesForUrl(url);
-            foreach (NSHttpCookie c in sharedCookies)
+            var sharedCookies = NSHttpCookieStorage.SharedStorage.CookiesForUrl(url);
+            foreach (var c in sharedCookies)
             {
                 if (c.Name == key && c.Domain == url.Host)
                 {
@@ -248,7 +248,7 @@ namespace Plugin.HybridWebView.macOS
             return response;
         }
 
-        void SetSource()
+        private void SetSource()
         {
             if (Element == null || Control == null || string.IsNullOrWhiteSpace(Element.Source)) return;
 
@@ -268,7 +268,7 @@ namespace Plugin.HybridWebView.macOS
             }
         }
 
-        void LoadStringData()
+        private void LoadStringData()
         {
             if (Control == null || Element == null) return;
 
@@ -276,7 +276,7 @@ namespace Plugin.HybridWebView.macOS
             Control.LoadHtmlString(Element.Source, nsBaseUri);
         }
 
-        void LoadLocalFile()
+        private void LoadLocalFile()
         {
             if (Control == null || Element == null) return;
 
@@ -287,7 +287,7 @@ namespace Plugin.HybridWebView.macOS
             Control.LoadFileUrl(nsFileUri, nsBaseUri);
         }
 
-        void LoadInternetContent()
+        private void LoadInternetContent()
         {
             if (Control == null || Element == null) return;
 
@@ -324,13 +324,13 @@ namespace Plugin.HybridWebView.macOS
             Element.HandleScriptReceived(message.Body.ToString());
         }
 
-        void OnRefreshRequested(object sender, EventArgs e)
+        private void OnRefreshRequested(object sender, EventArgs e)
         {
             if (Control == null) return;
             Control.ReloadFromOrigin();
         }
 
-        void OnForwardRequested(object sender, EventArgs e)
+        private void OnForwardRequested(object sender, EventArgs e)
         {
             if (Control == null || Element == null) return;
 
@@ -338,7 +338,7 @@ namespace Plugin.HybridWebView.macOS
                 Control.GoForward();
         }
 
-        void OnBackRequested(object sender, EventArgs e)
+        private void OnBackRequested(object sender, EventArgs e)
         {
             if (Control == null || Element == null) return;
 

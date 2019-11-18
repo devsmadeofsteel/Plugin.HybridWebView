@@ -24,7 +24,7 @@ namespace Plugin.HybridWebView.UWP
         public static event EventHandler<Windows.UI.Xaml.Controls.WebView> OnControlChanged;
 
         public static string BaseUrl { get; set; } = "ms-appx:///";
-        LocalFileStreamResolver _resolver;
+        private LocalFileStreamResolver _resolver;
 
         public static void Initialize()
         {
@@ -46,7 +46,7 @@ namespace Plugin.HybridWebView.UWP
                 DestroyOldElement(e.OldElement);
         }
 
-        void SetupNewElement(HybridWebViewControl element)
+        private void SetupNewElement(HybridWebViewControl element)
         {
             element.PropertyChanged += OnWebViewPropertyChanged;
             element.OnJavascriptInjectionRequest += OnJavascriptInjectionRequestAsync;
@@ -61,7 +61,7 @@ namespace Plugin.HybridWebView.UWP
             SetSource();
         }
 
-        void DestroyOldElement(HybridWebViewControl element)
+        private void DestroyOldElement(HybridWebViewControl element)
         {
             element.PropertyChanged -= OnWebViewPropertyChanged;
             element.OnJavascriptInjectionRequest -= OnJavascriptInjectionRequestAsync;
@@ -76,7 +76,7 @@ namespace Plugin.HybridWebView.UWP
             element.Dispose();
         }
 
-        void SetupControl()
+        private void SetupControl()
         {
             var control = new Windows.UI.Xaml.Controls.WebView();
             _resolver = new LocalFileStreamResolver(this);
@@ -94,12 +94,12 @@ namespace Plugin.HybridWebView.UWP
             OnControlChanged?.Invoke(this, control);
         }
 
-        void OnRefreshRequested(object sender, EventArgs e)
+        private void OnRefreshRequested(object sender, EventArgs e)
         {
             SetSource();
         }
 
-        void OnForwardRequested(object sender, EventArgs e)
+        private void OnForwardRequested(object sender, EventArgs e)
         {
             if (Control == null) return;
 
@@ -107,7 +107,7 @@ namespace Plugin.HybridWebView.UWP
                 Control.GoForward();
         }
 
-        void OnBackRequested(object sender, EventArgs e)
+        private void OnBackRequested(object sender, EventArgs e)
         {
             if (Control == null) return;
 
@@ -115,7 +115,7 @@ namespace Plugin.HybridWebView.UWP
                 Control.GoBack();
         }
 
-        void OnWebViewPropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        private void OnWebViewPropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
             switch (e.PropertyName)
             {
@@ -125,7 +125,7 @@ namespace Plugin.HybridWebView.UWP
             }
         }
 
-        void OnNavigationStarting(Windows.UI.Xaml.Controls.WebView sender, WebViewNavigationStartingEventArgs args)
+        private void OnNavigationStarting(Windows.UI.Xaml.Controls.WebView sender, WebViewNavigationStartingEventArgs args)
         {
 
             if (Element == null) return;
@@ -167,7 +167,7 @@ namespace Plugin.HybridWebView.UWP
             }
         }
 
-        void OnNavigationCompleted(Windows.UI.Xaml.Controls.WebView sender, WebViewNavigationCompletedEventArgs args)
+        private void OnNavigationCompleted(Windows.UI.Xaml.Controls.WebView sender, WebViewNavigationCompletedEventArgs args)
         {
             if (Element == null) return;
 
@@ -181,7 +181,7 @@ namespace Plugin.HybridWebView.UWP
             Element.HandleNavigationCompleted(args.Uri.ToString());
         }
 
-        async void OnDOMContentLoaded(Windows.UI.Xaml.Controls.WebView sender, WebViewDOMContentLoadedEventArgs args)
+        private async void OnDOMContentLoaded(Windows.UI.Xaml.Controls.WebView sender, WebViewDOMContentLoadedEventArgs args)
         {
             if (Element == null) return;
 
@@ -200,7 +200,7 @@ namespace Plugin.HybridWebView.UWP
             Element.HandleContentLoaded();
         }
 
-        async void OnCallbackAdded(object sender, string e)
+        private async void OnCallbackAdded(object sender, string e)
         {
             if (Element == null || string.IsNullOrWhiteSpace(e)) return;
 
@@ -208,7 +208,7 @@ namespace Plugin.HybridWebView.UWP
                 await OnJavascriptInjectionRequestAsync(HybridWebViewControl.GenerateFunctionScript(e));
         }
 
-        void OnScriptNotify(object sender, NotifyEventArgs e)
+        private void OnScriptNotify(object sender, NotifyEventArgs e)
         {
             if (Element == null) return;
             Element.HandleScriptReceived(e.Value);
@@ -230,11 +230,11 @@ namespace Plugin.HybridWebView.UWP
             var cookie = string.Empty;
             var url = new Uri(Element.Source);
 
-            HttpBaseProtocolFilter filter = new HttpBaseProtocolFilter();
+            var filter = new HttpBaseProtocolFilter();
             var cookieManager = filter.CookieManager;
-            HttpCookieCollection cookieCollection = cookieManager.GetCookies(url);
+            var cookieCollection = cookieManager.GetCookies(url);
 
-            foreach (HttpCookie currentCookie in cookieCollection)
+            foreach (var currentCookie in cookieCollection)
             {
                 cookie += currentCookie.Name + "=" + currentCookie.Value + "; ";
             }
@@ -253,11 +253,11 @@ namespace Plugin.HybridWebView.UWP
             var domain = (new Uri(Element.Source)).Host;
             var cookie = string.Empty;
 
-            HttpBaseProtocolFilter filter = new HttpBaseProtocolFilter();
+            var filter = new HttpBaseProtocolFilter();
             var cookieManager = filter.CookieManager;
-            HttpCookieCollection cookieCollection = cookieManager.GetCookies(url);
+            var cookieCollection = cookieManager.GetCookies(url);
 
-            foreach (HttpCookie currentCookie in cookieCollection)
+            foreach (var currentCookie in cookieCollection)
             {
                 if (key == currentCookie.Name)
                 {
@@ -279,12 +279,12 @@ namespace Plugin.HybridWebView.UWP
             newCookie.Secure = cookie.Secure;
             newCookie.Expires = cookie.Expires;
 
-            List<HttpCookie> cookieCollection = new List<HttpCookie>();
-            HttpBaseProtocolFilter filter = new HttpBaseProtocolFilter();
+            var cookieCollection = new List<HttpCookie>();
+            var filter = new HttpBaseProtocolFilter();
             HttpClient httpClient;
             filter.IgnorableServerCertificateErrors.Add(ChainValidationResult.Untrusted);
             filter.IgnorableServerCertificateErrors.Add(ChainValidationResult.Expired);
-            foreach (HttpCookie knownCookie in cookieCollection)
+            foreach (var knownCookie in cookieCollection)
             {
                 filter.CookieManager.SetCookie(knownCookie);
             }
@@ -296,14 +296,14 @@ namespace Plugin.HybridWebView.UWP
 
         }
 
-        async Task<string> OnJavascriptInjectionRequestAsync(string js)
+        private async Task<string> OnJavascriptInjectionRequestAsync(string js)
         {
             if (Control == null) return string.Empty;
             var result = await Control.InvokeScriptAsync("eval", new[] { js });
             return result;
         }
 
-        void SetSource()
+        private void SetSource()
         {
             if (Element == null || Control == null || string.IsNullOrWhiteSpace(Element.Source)) return;
 
@@ -321,7 +321,7 @@ namespace Plugin.HybridWebView.UWP
             }
         }
 
-        void NavigateWithHttpRequest(Uri uri)
+        private void NavigateWithHttpRequest(Uri uri)
         {
             if (Element == null || Control == null) return;
 
@@ -348,12 +348,12 @@ namespace Plugin.HybridWebView.UWP
             Control.NavigateWithHttpRequestMessage(requestMsg);
         }
 
-        void LoadLocalFile(string source)
+        private void LoadLocalFile(string source)
         {
             Control.NavigateToLocalStreamUri(Control.BuildLocalStreamUri("/", source), _resolver);
         }
 
-        void LoadStringData(string source)
+        private void LoadStringData(string source)
         {
             Control.NavigateToString(source);
         }
@@ -363,7 +363,7 @@ namespace Plugin.HybridWebView.UWP
             return Element?.BaseUrl ?? BaseUrl;
         }
 
-        Windows.UI.Color ToWindowsColor(Xamarin.Forms.Color color)
+        private Windows.UI.Color ToWindowsColor(Xamarin.Forms.Color color)
         {
             // Make colour safe for Windows
             if (color.A == -1 || color.R == -1 || color.G == -1 || color.B == -1)

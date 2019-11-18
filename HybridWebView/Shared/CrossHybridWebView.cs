@@ -7,7 +7,7 @@ namespace Plugin.HybridWebView.Shared
     /// </summary>
     public static class CrossHybridWebView
     {
-        static Lazy<IHybridWebView> _implementation = new Lazy<IHybridWebView>(() => CreateHybridWebView(), System.Threading.LazyThreadSafetyMode.PublicationOnly);
+        private static Lazy<IHybridWebView> _implementation = new Lazy<IHybridWebView>(() => CreateHybridWebView(), System.Threading.LazyThreadSafetyMode.PublicationOnly);
 
         /// <summary>
         /// Gets if the plugin is supported on the current platform.
@@ -21,7 +21,7 @@ namespace Plugin.HybridWebView.Shared
         {
             get
             {
-                IHybridWebView ret = _implementation.Value;
+                var ret = _implementation.Value;
                 if (ret == null)
                 {
                     throw NotImplementedInReferenceAssembly();
@@ -30,7 +30,7 @@ namespace Plugin.HybridWebView.Shared
             }
         }
 
-        static IHybridWebView CreateHybridWebView()
+        private static IHybridWebView CreateHybridWebView()
         {
 #if NETSTANDARD1_0 || NETSTANDARD2_0
             return null;

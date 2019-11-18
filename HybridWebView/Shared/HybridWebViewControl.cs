@@ -261,12 +261,11 @@ namespace Plugin.HybridWebView.Shared
         /// Setting a cookie value by cookiename
         /// </summary>
         /// <param name="cookie">Cookie object to set as cookie</param>
-        /// <param name="duration">Expiration of cookie in seconds. If set to 0 or lower, the cookie is deleted. If not specified the cookie is set as sessioncookie and removed on app-close (Only works with iOS/macOS for now)</param>
         /// <returns>A string with the cookievalue. is string.Empty if there is no cookie with that name</returns>
         public async Task<string> SetCookieAsync(Cookie cookie)
         {
             if (cookie == null) return string.Empty;
-            if (OnGetCookieRequestedAsync != null)
+            if (OnSetCookieRequestedAsync != null)
                 return await OnSetCookieRequestedAsync.Invoke(cookie);
             return string.Empty;
         }
@@ -339,8 +338,8 @@ namespace Plugin.HybridWebView.Shared
         internal DecisionHandlerDelegate HandleNavigationStartRequest(string uri)
         {
             // By default, we only attempt to offload valid Uris with none http/s schemes
-            bool validUri = Uri.TryCreate(uri, UriKind.Absolute, out Uri uriResult);
-            bool validScheme = false;
+            var validUri = Uri.TryCreate(uri, UriKind.Absolute, out var uriResult);
+            var validScheme = false;
 
             if (validUri)
                 validScheme = uriResult.Scheme.StartsWith("http") || uriResult.Scheme.StartsWith("file");
@@ -377,7 +376,7 @@ namespace Plugin.HybridWebView.Shared
             var action = JsonConvert.DeserializeObject<ActionEvent>(data);
 
             // Decode
-            byte[] dBytes = Convert.FromBase64String(action.Data);
+            var dBytes = Convert.FromBase64String(action.Data);
             action.Data = Encoding.UTF8.GetString(dBytes, 0, dBytes.Length);
 
             // Local takes priority

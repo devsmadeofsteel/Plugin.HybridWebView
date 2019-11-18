@@ -9,12 +9,11 @@ namespace Plugin.HybridWebView.iOS
 {
     public class FormsNavigationDelegate : WKNavigationDelegate
     {
-
-        readonly WeakReference<HybridWebViewRenderer> Reference;
+        private readonly WeakReference<HybridWebViewRenderer> _reference;
 
         public FormsNavigationDelegate(HybridWebViewRenderer renderer)
         {
-            Reference = new WeakReference<HybridWebViewRenderer>(renderer);
+            _reference = new WeakReference<HybridWebViewRenderer>(renderer);
         }
 
         public bool AttemptOpenCustomUrlScheme(NSUrl url)
@@ -30,7 +29,7 @@ namespace Plugin.HybridWebView.iOS
         [Export("webView:decidePolicyForNavigationAction:decisionHandler:")]
         public override void DecidePolicy(WKWebView webView, WKNavigationAction navigationAction, Action<WKNavigationActionPolicy> decisionHandler)
         {
-            if (Reference == null || !Reference.TryGetTarget(out HybridWebViewRenderer renderer)) return;
+            if (_reference == null || !_reference.TryGetTarget(out var renderer)) return;
             if (renderer.Element == null) return;
 
             // If navigation target frame is null, this can mean that the link contains target="_blank". Start loadrequest to perform the navigation
@@ -66,7 +65,7 @@ namespace Plugin.HybridWebView.iOS
 
         public override void DecidePolicy(WKWebView webView, WKNavigationResponse navigationResponse, Action<WKNavigationResponsePolicy> decisionHandler)
         {
-            if (Reference == null || !Reference.TryGetTarget(out HybridWebViewRenderer renderer)) return;
+            if (_reference == null || !_reference.TryGetTarget(out var renderer)) return;
             if (renderer.Element == null) return;
 
             if (navigationResponse.Response is NSHttpUrlResponse)
@@ -87,7 +86,7 @@ namespace Plugin.HybridWebView.iOS
         [Export("webView:didFinishNavigation:")]
         public async override void DidFinishNavigation(WKWebView webView, WKNavigation navigation)
         {
-            if (Reference == null || !Reference.TryGetTarget(out HybridWebViewRenderer renderer)) return;
+            if (_reference == null || !_reference.TryGetTarget(out var renderer)) return;
             if (renderer.Element == null) return;
 
             renderer.Element.HandleNavigationCompleted(webView.Url.ToString());
@@ -110,7 +109,7 @@ namespace Plugin.HybridWebView.iOS
         [ObjCRuntime.BindingImpl(ObjCRuntime.BindingImplOptions.GeneratedCode | ObjCRuntime.BindingImplOptions.Optimizable)]
         public virtual void DidStartProvisionalNavigation(WKWebView webView, WKNavigation navigation)
         {
-            if (Reference == null || !Reference.TryGetTarget(out HybridWebViewRenderer renderer)) return;
+            if (_reference == null || !_reference.TryGetTarget(out var renderer)) return;
             if (renderer.Element == null) return;
             Device.BeginInvokeOnMainThread(() =>
             {

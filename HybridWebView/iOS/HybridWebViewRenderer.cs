@@ -24,16 +24,15 @@ namespace Plugin.HybridWebView.iOS
 
         public static string BaseUrl { get; set; } = NSBundle.MainBundle.BundlePath;
 
-        FormsNavigationDelegate _navigationDelegate;
+        private FormsNavigationDelegate _navigationDelegate;
 
-        WKWebViewConfiguration _configuration;
+        private WKWebViewConfiguration _configuration;
 
-        WKUserContentController _contentController;
+        private WKUserContentController _contentController;
 
         public static void Initialize()
         {
             var dt = DateTime.Now;
-
         }
 
         protected override void OnElementChanged(ElementChangedEventArgs<HybridWebViewControl> e)
@@ -50,7 +49,7 @@ namespace Plugin.HybridWebView.iOS
                 DestroyElement(e.OldElement);
         }
 
-        void SetupElement(HybridWebViewControl element)
+        private void SetupElement(HybridWebViewControl element)
         {
             NSHttpCookieStorage.SharedStorage.AcceptPolicy = NSHttpCookieAcceptPolicy.Always;
             element.PropertyChanged += OnPropertyChanged;
@@ -67,7 +66,7 @@ namespace Plugin.HybridWebView.iOS
             SetSource();
         }
 
-        void DestroyElement(HybridWebViewControl element)
+        private void DestroyElement(HybridWebViewControl element)
         {
             element.PropertyChanged -= OnPropertyChanged;
             element.OnJavascriptInjectionRequest -= OnJavascriptInjectionRequest;
@@ -83,7 +82,7 @@ namespace Plugin.HybridWebView.iOS
             element.Dispose();
         }
 
-        void SetupControl()
+        private void SetupControl()
         {
             _navigationDelegate = new FormsNavigationDelegate(this);
             _contentController = new WKUserContentController();
@@ -110,7 +109,7 @@ namespace Plugin.HybridWebView.iOS
             OnControlChanged?.Invoke(this, wkWebView);
         }
 
-        async void OnCallbackAdded(object sender, string e)
+        private async void OnCallbackAdded(object sender, string e)
         {
             if (Element == null || string.IsNullOrWhiteSpace(e)) return;
 
@@ -118,7 +117,7 @@ namespace Plugin.HybridWebView.iOS
                 await OnJavascriptInjectionRequest(HybridWebViewControl.GenerateFunctionScript(e));
         }
 
-        void OnPropertyChanged(object sender, PropertyChangedEventArgs e)
+        private void OnPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             switch (e.PropertyName)
             {
@@ -141,8 +140,8 @@ namespace Plugin.HybridWebView.iOS
             }
 
             var url = new Uri(Element.Source);
-            NSHttpCookie[] sharedCookies = NSHttpCookieStorage.SharedStorage.CookiesForUrl(url);
-            foreach (NSHttpCookie c in sharedCookies)
+            var sharedCookies = NSHttpCookieStorage.SharedStorage.CookiesForUrl(url);
+            foreach (var c in sharedCookies)
             {
                 NSHttpCookieStorage.SharedStorage.DeleteCookie(c);
             }
@@ -174,7 +173,7 @@ namespace Plugin.HybridWebView.iOS
             return toReturn;
         }
 
-        async Task<string> OnGetAllCookiesRequestAsync()
+        private async Task<string> OnGetAllCookiesRequestAsync()
         {
             if (Control == null || Element == null)
             {
@@ -183,8 +182,8 @@ namespace Plugin.HybridWebView.iOS
             var cookieCollection = string.Empty;
             var url = Control.Url;
 
-            NSHttpCookie[] sharedCookies = NSHttpCookieStorage.SharedStorage.CookiesForUrl(url);
-            foreach (NSHttpCookie c in sharedCookies)
+            var sharedCookies = NSHttpCookieStorage.SharedStorage.CookiesForUrl(url);
+            foreach (var c in sharedCookies)
             {
                 if (c.Domain == url.Host)
                 {
@@ -227,8 +226,8 @@ namespace Plugin.HybridWebView.iOS
                     return c.Value;
             }
 
-            NSHttpCookie[] sharedCookies = NSHttpCookieStorage.SharedStorage.CookiesForUrl(url);
-            foreach (NSHttpCookie c in sharedCookies)
+            var sharedCookies = NSHttpCookieStorage.SharedStorage.CookiesForUrl(url);
+            foreach (var c in sharedCookies)
             {
                 if (c.Name == key && c.Domain == url.Host)
                 {
@@ -256,7 +255,7 @@ namespace Plugin.HybridWebView.iOS
             return response;
         }
 
-        void SetSource()
+        private void SetSource()
         {
             if (Element == null || Control == null || string.IsNullOrWhiteSpace(Element.Source)) return;
 
@@ -276,7 +275,7 @@ namespace Plugin.HybridWebView.iOS
             }
         }
 
-        void LoadStringData()
+        private void LoadStringData()
         {
             if (Control == null || Element == null) return;
 
@@ -284,7 +283,7 @@ namespace Plugin.HybridWebView.iOS
             Control.LoadHtmlString(Element.Source, nsBaseUri);
         }
 
-        void LoadLocalFile()
+        private void LoadLocalFile()
         {
             if (Control == null || Element == null) return;
 
@@ -295,7 +294,7 @@ namespace Plugin.HybridWebView.iOS
             Control.LoadFileUrl(nsFileUri, nsBaseUri);
         }
 
-        void LoadInternetContent()
+        private void LoadInternetContent()
         {
             if (Control == null || Element == null) return;
 
@@ -333,13 +332,13 @@ namespace Plugin.HybridWebView.iOS
             Element.HandleScriptReceived(message.Body.ToString());
         }
 
-        void OnRefreshRequested(object sender, EventArgs e)
+        private void OnRefreshRequested(object sender, EventArgs e)
         {
             if (Control == null) return;
             Control.ReloadFromOrigin();
         }
 
-        void OnForwardRequested(object sender, EventArgs e)
+        private void OnForwardRequested(object sender, EventArgs e)
         {
             if (Control == null || Element == null) return;
 
@@ -347,7 +346,7 @@ namespace Plugin.HybridWebView.iOS
                 Control.GoForward();
         }
 
-        void OnBackRequested(object sender, EventArgs e)
+        private void OnBackRequested(object sender, EventArgs e)
         {
             if (Control == null || Element == null) return;
 

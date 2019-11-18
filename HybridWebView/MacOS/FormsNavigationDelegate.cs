@@ -1,14 +1,14 @@
 ﻿using System;
 using Foundation;
+using Plugin.HybridWebView.Shared;
 using WebKit;
-using AppKit;
+using Xamarin.Forms;
 
 namespace Plugin.HybridWebView.macOS
 {
     public class FormsNavigationDelegate : WKNavigationDelegate
     {
-
-        readonly WeakReference<HybridWebViewRenderer> Reference;
+        private readonly WeakReference<HybridWebViewRenderer> Reference;
 
         public FormsNavigationDelegate(HybridWebViewRenderer renderer)
         {
@@ -18,7 +18,7 @@ namespace Plugin.HybridWebView.macOS
         [Export("webView:decidePolicyForNavigationAction:decisionHandler:")]
         public override void DecidePolicy(WKWebView webView, WKNavigationAction navigationAction, Action<WKNavigationActionPolicy> decisionHandler)
         {
-            if (Reference == null || !Reference.TryGetTarget(out HybridWebViewRenderer renderer)) return;
+            if (Reference == null || !Reference.TryGetTarget(out var renderer)) return;
             if (renderer.Element == null) return;
 
             var response = renderer.Element.HandleNavigationStartRequest(navigationAction.Request.Url.ToString());
@@ -37,7 +37,7 @@ namespace Plugin.HybridWebView.macOS
 
         public override void DecidePolicy(WKWebView webView, WKNavigationResponse navigationResponse, Action<WKNavigationResponsePolicy> decisionHandler)
         {
-            if (Reference == null || !Reference.TryGetTarget(out HybridWebViewRenderer renderer)) return;
+            if (Reference == null || !Reference.TryGetTarget(out var renderer)) return;
             if (renderer.Element == null) return;
 
             if (navigationResponse.Response is NSHttpUrlResponse)
@@ -58,18 +58,18 @@ namespace Plugin.HybridWebView.macOS
         [Export("webView:didFinishNavigation:")]
         public async override void DidFinishNavigation(WKWebView webView, WKNavigation navigation)
         {
-            if (Reference == null || !Reference.TryGetTarget(out HybridWebViewRenderer renderer)) return;
+            if (Reference == null || !Reference.TryGetTarget(out var renderer)) return;
             if (renderer.Element == null) return;
 
             renderer.Element.HandleNavigationCompleted(webView.Url.ToString());
-            await renderer.OnJavascriptInjectionRequest(FormsWebView.InjectedFunction);
+            await renderer.OnJavascriptInjectionRequest(HybridWebViewControl.InjectedFunction);
 
             if (renderer.Element.EnableGlobalCallbacks)
-                foreach (var function in FormsWebView.GlobalRegisteredCallbacks)
-                    await renderer.OnJavascriptInjectionRequest(FormsWebView.GenerateFunctionScript(function.Key));
+                foreach (var function in HybridWebViewControl.GlobalRegisteredCallbacks)
+                    await renderer.OnJavascriptInjectionRequest(HybridWebViewControl.GenerateFunctionScript(function.Key));
 
             foreach (var function in renderer.Element.LocalRegisteredCallbacks)
-                await renderer.OnJavascriptInjectionRequest(FormsWebView.GenerateFunctionScript(function.Key));
+                await renderer.OnJavascriptInjectionRequest(HybridWebViewControl.GenerateFunctionScript(function.Key));
 
             renderer.Element.CanGoBack = webView.CanGoBack;
             renderer.Element.CanGoForward = webView.CanGoForward;
@@ -81,7 +81,7 @@ namespace Plugin.HybridWebView.macOS
         [ObjCRuntime.BindingImpl(ObjCRuntime.BindingImplOptions.GeneratedCode | ObjCRuntime.BindingImplOptions.Optimizable)]
         public virtual void DidStartProvisionalNavigation(WKWebView webView, WKNavigation navigation)
         {
-            if (Reference == null || !Reference.TryGetTarget(out HybridWebViewRenderer renderer)) return;
+            if (Reference == null || !Reference.TryGetTarget(out var renderer)) return;
             if (renderer.Element == null) return;
             Device.BeginInvokeOnMainThread(() =>
             {

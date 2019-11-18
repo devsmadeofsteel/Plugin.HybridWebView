@@ -20,7 +20,7 @@ namespace Plugin.HybridWebView.Droid
     /// <summary>
     /// Interface for HybridWebView
     /// </summary>
-    public class HybridWebViewRenderer : ViewRenderer<Shared.HybridWebViewControl, Android.Webkit.WebView>
+    public class HybridWebViewRenderer : ViewRenderer<HybridWebViewControl, Android.Webkit.WebView>
     {
         public static string MimeType = "text/html";
 
@@ -30,14 +30,15 @@ namespace Plugin.HybridWebView.Droid
 
         public static string BaseUrl { get; set; } = "file:///android_asset/";
 
-        public static bool IgnoreSSLGlobally { get; set; }
+        public static bool IgnoreSslGlobally { get; set; }
 
         public static event EventHandler<Android.Webkit.WebView> OnControlChanged;
 
-        JavascriptValueCallback _callback;
+        private JavascriptValueCallback _callback;
 
         public static void Initialize()
         {
+            // ReSharper disable once UnusedVariable
             var dt = DateTime.Now;
         }
 
@@ -54,13 +55,17 @@ namespace Plugin.HybridWebView.Droid
             if (e.OldElement != null)
                 DestroyElement(e.OldElement);
 
-            if (Element.UseWideViewPort)
+            if (Element != null && Element.UseWideViewPort)
             {
-                Control.Settings.LoadWithOverviewMode = true;
-                Control.Settings.UseWideViewPort = true;
+                if (Control != null)
+                {
+                    Control.Settings.LoadWithOverviewMode = true;
+                    Control.Settings.UseWideViewPort = true;
+                }
             }
         }
-        void SetupElement(HybridWebViewControl element)
+
+        private void SetupElement(HybridWebViewControl element)
         {
             element.PropertyChanged += OnPropertyChanged;
             element.OnJavascriptInjectionRequest += OnJavascriptInjectionRequest;
@@ -77,7 +82,7 @@ namespace Plugin.HybridWebView.Droid
             SetSource();
         }
 
-        void DestroyElement(HybridWebViewControl element)
+        private void DestroyElement(HybridWebViewControl element)
         {
             element.PropertyChanged -= OnPropertyChanged;
             element.OnJavascriptInjectionRequest -= OnJavascriptInjectionRequest;
@@ -94,7 +99,7 @@ namespace Plugin.HybridWebView.Droid
             element.Dispose();
         }
 
-        void SetupControl()
+        private void SetupControl()
         {
             var webView = new Android.Webkit.WebView(Forms.Context);
             _callback = new JavascriptValueCallback(this);
@@ -118,7 +123,7 @@ namespace Plugin.HybridWebView.Droid
             OnControlChanged?.Invoke(this, webView);
         }
 
-        async void OnCallbackAdded(object sender, string e)
+        private async void OnCallbackAdded(object sender, string e)
         {
             if (Element == null || string.IsNullOrWhiteSpace(e)) return;
 
@@ -126,7 +131,7 @@ namespace Plugin.HybridWebView.Droid
                 await OnJavascriptInjectionRequest(HybridWebViewControl.GenerateFunctionScript(e));
         }
 
-        void OnForwardRequested(object sender, EventArgs e)
+        private void OnForwardRequested(object sender, EventArgs e)
         {
             if (Control == null) return;
 
@@ -134,7 +139,7 @@ namespace Plugin.HybridWebView.Droid
                 Control.GoForward();
         }
 
-        void OnBackRequested(object sender, EventArgs e)
+        private void OnBackRequested(object sender, EventArgs e)
         {
             if (Control == null) return;
 
@@ -142,14 +147,12 @@ namespace Plugin.HybridWebView.Droid
                 Control.GoBack();
         }
 
-        void OnRefreshRequested(object sender, EventArgs e)
+        private void OnRefreshRequested(object sender, EventArgs e)
         {
-            if (Control == null) return;
-
-            Control.Reload();
+            Control?.Reload();
         }
 
-        void OnPropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        private void OnPropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
             switch (e.PropertyName)
             {
@@ -159,11 +162,11 @@ namespace Plugin.HybridWebView.Droid
             }
         }
 
-        private async Task OnClearCookiesRequest()
+        private Task OnClearCookiesRequest()
         {
-            if (Control == null) return;
+            if (Control == null) return Task.CompletedTask;
 
-            if (Build.VERSION.SdkInt >= Android.OS.BuildVersionCodes.LollipopMr1)
+            if (Build.VERSION.SdkInt >= BuildVersionCodes.LollipopMr1)
             {
                 CookieManager.Instance.RemoveAllCookies(null);
                 CookieManager.Instance.Flush();
@@ -171,48 +174,50 @@ namespace Plugin.HybridWebView.Droid
             else
             {
                 //CookieSyncManager cookieSyncMngr = CookieSyncManager.createInstance(context);
-                CookieSyncManager cookieSyncMngr = CookieSyncManager.CreateInstance(Context);
+                var cookieSyncMngr = CookieSyncManager.CreateInstance(Context);
                 cookieSyncMngr.StartSync();
-                CookieManager cookieManager = CookieManager.Instance;
+                var cookieManager = CookieManager.Instance;
                 cookieManager.RemoveAllCookie();
                 cookieManager.RemoveSessionCookie();
                 cookieSyncMngr.StopSync();
                 cookieSyncMngr.Sync();
             }
+            
+            return Task.CompletedTask;
         }
 
 
-        private async Task<string> OnGetAllCookieRequestAsync()
+        private Task<string> OnGetAllCookieRequestAsync()
         {
-            if (Control == null || Element == null) return string.Empty;
+            if (Control == null || Element == null) return Task.FromResult(string.Empty);
             var cookies = string.Empty;
 
             if (Control != null && Element != null)
             {
-                string url = string.Empty;
+                var url = string.Empty;
                 try
                 {
                     url = Control.Url;
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     url = Element.BaseUrl;
                 }
-                if (Build.VERSION.SdkInt >= Android.OS.BuildVersionCodes.LollipopMr1)
+                if (Build.VERSION.SdkInt >= BuildVersionCodes.LollipopMr1)
                 {
                     CookieManager.Instance.Flush();
                     cookies = CookieManager.Instance.GetCookie(url);
                 }
                 else
                 {
-                    CookieSyncManager cookieSyncMngr = CookieSyncManager.CreateInstance(Context);
+                    var cookieSyncMngr = CookieSyncManager.CreateInstance(Context);
                     cookieSyncMngr.StartSync();
-                    CookieManager cookieManager = CookieManager.Instance;
+                    var cookieManager = CookieManager.Instance;
                     cookies = cookieManager.GetCookie(url);
                 }
             }
 
-            return cookies;
+            return Task.FromResult(cookies);
         }
 
         private async Task<string> OnSetCookieRequestAsync(Cookie cookie)
@@ -220,7 +225,7 @@ namespace Plugin.HybridWebView.Droid
             if (Control != null && Element != null)
             {
                 var url = new Uri(Control.Url).Host;
-                if (Build.VERSION.SdkInt >= Android.OS.BuildVersionCodes.LollipopMr1)
+                if (Build.VERSION.SdkInt >= BuildVersionCodes.LollipopMr1)
                 {
 
                     CookieManager.Instance.SetCookie(url, cookie.ToString());
@@ -228,9 +233,9 @@ namespace Plugin.HybridWebView.Droid
                 }
                 else
                 {
-                    CookieSyncManager cookieSyncMngr = CookieSyncManager.CreateInstance(Context);
+                    var cookieSyncMngr = CookieSyncManager.CreateInstance(Context);
                     cookieSyncMngr.StartSync();
-                    CookieManager cookieManager = CookieManager.Instance;
+                    var cookieManager = CookieManager.Instance;
                     cookieManager.SetCookie(url, cookie.ToString());
                     cookieManager.Flush();
                 }
@@ -246,54 +251,61 @@ namespace Plugin.HybridWebView.Droid
         private async Task<string> OnGetCookieRequestAsync(string key)
         {
 
-            var cookie = default(string);
-
-            if (Control != null && Element != null)
+            return await Task.Run(() =>
             {
-                string url = string.Empty;
-                try
-                {
-                    url = Control.Url;
-                }
-                catch (Exception e)
-                {
-                    url = Element.BaseUrl;
-                }
-                string cookieCollectionString;
-                string[] cookieCollection;
+                var cookie = default(string);
 
-                try
+                if (Control != null && Element != null)
                 {
-                    if (Build.VERSION.SdkInt >= Android.OS.BuildVersionCodes.LollipopMr1)
+                    var url = string.Empty;
+                    try
                     {
-                        CookieManager.Instance.Flush();
-                        cookieCollectionString = CookieManager.Instance.GetCookie(url);
-
+                        url = Control.Url;
                     }
-                    else
+                    catch (Exception e)
                     {
-                        CookieSyncManager cookieSyncMngr = CookieSyncManager.CreateInstance(Context);
-                        cookieSyncMngr.StartSync();
-                        CookieManager cookieManager = CookieManager.Instance;
-                        cookieCollectionString = cookieManager.GetCookie(url);
+                        url = Element.BaseUrl;
                     }
-                    cookieCollection = cookieCollectionString.Split(new string[] { "; " }, StringSplitOptions.None);
 
-                    foreach (var c in cookieCollection)
+                    string cookieCollectionString;
+                    string[] cookieCollection;
+
+                    try
                     {
-                        var keyValue = c.Split(new[] { '=' }, 2);
-                        if (keyValue.Length > 1 && keyValue[0] == key)
+                        if (Build.VERSION.SdkInt >= Android.OS.BuildVersionCodes.LollipopMr1)
                         {
-                            cookie = keyValue[1];
-                            break;
+                            CookieManager.Instance.Flush();
+                            cookieCollectionString = CookieManager.Instance.GetCookie(url);
+
+                        }
+                        else
+                        {
+                            var cookieSyncMngr = CookieSyncManager.CreateInstance(Context);
+                            cookieSyncMngr.StartSync();
+                            var cookieManager = CookieManager.Instance;
+                            cookieCollectionString = cookieManager.GetCookie(url);
+                        }
+
+                        cookieCollection = cookieCollectionString.Split(new string[] {"; "}, StringSplitOptions.None);
+
+                        foreach (var c in cookieCollection)
+                        {
+                            var keyValue = c.Split(new[] {'='}, 2);
+                            if (keyValue.Length > 1 && keyValue[0] == key)
+                            {
+                                cookie = keyValue[1];
+                                break;
+                            }
                         }
                     }
+                    catch (Exception)
+                    {
+                        // ignored
+                    }
                 }
-                catch (Exception e) { }
-            }
 
-
-            return cookie;
+                return cookie;
+            });
         }
 
 
@@ -355,7 +367,7 @@ namespace Plugin.HybridWebView.Droid
             SetCurrentUrl();
         }
 
-        void LoadFromString()
+        private void LoadFromString()
         {
             if (Element == null || Control == null || Element.Source == null) return;
 
@@ -367,14 +379,14 @@ namespace Plugin.HybridWebView.Droid
             Control.LoadDataWithBaseURL(Element.BaseUrl ?? BaseUrl, Element.Source, MimeType, EncodingType, HistoryUri);
         }
 
-        void LoadFromFile()
+        private void LoadFromFile()
         {
             if (Element == null || Control == null || Element.Source == null) return;
 
             Control.LoadUrl(Path.Combine(Element.BaseUrl ?? BaseUrl, Element.Source));
         }
 
-        void LoadFromInternet()
+        private void LoadFromInternet()
         {
             if (Element == null || Control == null || Element.Source == null) return;
 

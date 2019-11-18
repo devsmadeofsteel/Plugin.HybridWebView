@@ -114,7 +114,6 @@ namespace Plugin.HybridWebView.Shared
         /// Removes a callback by the function name.
         /// Note: this does not remove it from the DOM, rather it removes the action, resulting in your view never getting the response.
         /// </summary>
-        /// <param name="functionName"></param>
         public static void RemoveAllGlobalCallbacks()
         {
             GlobalRegisteredCallbacks.Clear();

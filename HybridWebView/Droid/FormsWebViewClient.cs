@@ -10,17 +10,16 @@ namespace Plugin.HybridWebView.Droid
 {
     public class FormsWebViewClient : WebViewClient
     {
-
-        readonly WeakReference<HybridWebViewRenderer> Reference;
+        private readonly WeakReference<HybridWebViewRenderer> _reference;
 
         public FormsWebViewClient(HybridWebViewRenderer renderer)
         {
-            Reference = new WeakReference<HybridWebViewRenderer>(renderer);
+            _reference = new WeakReference<HybridWebViewRenderer>(renderer);
         }
 
         public override void OnReceivedHttpError(Android.Webkit.WebView view, IWebResourceRequest request, WebResourceResponse errorResponse)
         {
-            if (Reference == null || !Reference.TryGetTarget(out HybridWebViewRenderer renderer)) return;
+            if (_reference == null || !_reference.TryGetTarget(out var renderer)) return;
             if (renderer.Element == null) return;
 
             renderer.Element.HandleNavigationError(errorResponse.StatusCode);
@@ -30,7 +29,7 @@ namespace Plugin.HybridWebView.Droid
 
         public override void OnReceivedError(Android.Webkit.WebView view, IWebResourceRequest request, WebResourceError error)
         {
-            if (Reference == null || !Reference.TryGetTarget(out HybridWebViewRenderer renderer)) return;
+            if (_reference == null || !_reference.TryGetTarget(out var renderer)) return;
             if (renderer.Element == null) return;
 
             renderer.Element.HandleNavigationError((int)error.ErrorCode);
@@ -57,7 +56,7 @@ namespace Plugin.HybridWebView.Droid
 
         private bool DoesComponentWantToOverrideUrlLoading(Android.Webkit.WebView view, string url)
         {
-            if (Reference != null && Reference.TryGetTarget(out HybridWebViewRenderer renderer) && renderer.Element != null)
+            if (_reference != null && _reference.TryGetTarget(out var renderer) && renderer.Element != null)
             {
                 var response = renderer.Element.HandleNavigationStartRequest(url);
 
@@ -76,9 +75,9 @@ namespace Plugin.HybridWebView.Droid
             return false;
         }
 
-        void CheckResponseValidity(Android.Webkit.WebView view, string url)
+        private void CheckResponseValidity(Android.Webkit.WebView view, string url)
         {
-            if (Reference == null || !Reference.TryGetTarget(out HybridWebViewRenderer renderer)) return;
+            if (_reference == null || !_reference.TryGetTarget(out var renderer)) return;
             if (renderer.Element == null) return;
 
             var response = renderer.Element.HandleNavigationStartRequest(url);
@@ -97,22 +96,22 @@ namespace Plugin.HybridWebView.Droid
 
         public override void OnPageStarted(Android.Webkit.WebView view, string url, Bitmap favicon)
         {
-            if (Reference == null || !Reference.TryGetTarget(out HybridWebViewRenderer renderer)) return;
+            if (_reference == null || !_reference.TryGetTarget(out var renderer)) return;
             if (renderer.Element == null) return;
 
             renderer.Element.Navigating = true;
         }
 
-        bool AttemptToHandleCustomUrlScheme(Android.Webkit.WebView view, string url)
+        private bool AttemptToHandleCustomUrlScheme(Android.Webkit.WebView view, string url)
         {
             if (url.StartsWith("mailto"))
             {
-                Android.Net.MailTo emailData = Android.Net.MailTo.Parse(url);
+                var emailData = Android.Net.MailTo.Parse(url);
 
-                Intent email = new Intent(Intent.ActionSendto);
+                var email = new Intent(Intent.ActionSendto);
 
                 email.SetData(Android.Net.Uri.Parse("mailto:"));
-                email.PutExtra(Intent.ExtraEmail, new String[] { emailData.To });
+                email.PutExtra(Intent.ExtraEmail, new string[] { emailData.To });
                 email.PutExtra(Intent.ExtraSubject, emailData.Subject);
                 email.PutExtra(Intent.ExtraCc, emailData.Cc);
                 email.PutExtra(Intent.ExtraText, emailData.Body);
@@ -125,7 +124,7 @@ namespace Plugin.HybridWebView.Droid
 
             if (url.StartsWith("http"))
             {
-                Intent webPage = new Intent(Intent.ActionView, Android.Net.Uri.Parse(url));
+                var webPage = new Intent(Intent.ActionView, Android.Net.Uri.Parse(url));
                 if (webPage.ResolveActivity(Forms.Context.PackageManager) != null)
                     Forms.Context.StartActivity(webPage);
 
@@ -137,10 +136,10 @@ namespace Plugin.HybridWebView.Droid
 
         public override void OnReceivedSslError(Android.Webkit.WebView view, SslErrorHandler handler, SslError error)
         {
-            if (Reference == null || !Reference.TryGetTarget(out HybridWebViewRenderer renderer)) return;
+            if (_reference == null || !_reference.TryGetTarget(out var renderer)) return;
             if (renderer.Element == null) return;
 
-            if (HybridWebViewRenderer.IgnoreSSLGlobally)
+            if (HybridWebViewRenderer.IgnoreSslGlobally)
             {
                 handler.Proceed();
             }
@@ -154,7 +153,7 @@ namespace Plugin.HybridWebView.Droid
 
         public async override void OnPageFinished(Android.Webkit.WebView view, string url)
         {
-            if (Reference == null || !Reference.TryGetTarget(out HybridWebViewRenderer renderer)) return;
+            if (_reference == null || !_reference.TryGetTarget(out var renderer)) return;
             if (renderer.Element == null) return;
 
             // Add Injection Function
