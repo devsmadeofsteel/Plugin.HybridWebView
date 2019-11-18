@@ -31,6 +31,7 @@ This build has many changes, please read migration before deciding to make the j
 6) Massively improved sample application, designed to help you with implementation
 
 ### Migration
+
 1) WinRT (Desktop and Phone) are no longer supported! This is to align with Xamarin Forms.
 2) FormsWebViewRenderer.Init is now called FormsWebViewRenderer.Initialize. This is as not to hide a default property in the MacOS renderer.
 3) Headers now have to be applied globally or locally via GlobalRegisteredHeaders and LocalRegisteredHeaders. All previous calls will no longer work.
@@ -44,6 +45,7 @@ This build has many changes, please read migration before deciding to make the j
 Anything I forgot? Let me know in the issues!
 
 ## Why I made this?
+
 Hybrid WebViews are common across many applications these days with many different implementations available on the Web.
 Unfortunately for Xamarin, generally the only common HybridWebView is included as part of the XLabs toolset which gives the user the extra bloat of the additional components, as well as the problems associated with setting up this framework.
 
@@ -60,7 +62,8 @@ Unfortunately for Xamarin, generally the only common HybridWebView is included a
 /// Please call this before Forms is initialized to make sure assemblies link properly.
 /// Make sure to perform this step on each platform.
 /// </summary>
-FormsWebViewRenderer.Initialize();
+
+HybridWebViewRenderer.Initialize();
 Xamarin.Forms.Forms.Init(e);
 ```
 
@@ -84,7 +87,7 @@ Xamarin.Forms.Forms.Init(e);
 /// <summary>
 /// Bind an action to a Javascript function
 /// </summary>
-FormsWebView WebView = new FormsWebView();
+HybridWebViewControl WebView = new HybridWebViewControl();
 WebView.AddLocalCallback("test", (str) => Debug.WriteLine(str));
 WebView.RemoveLocalCallback("test");
 ```
@@ -93,7 +96,7 @@ WebView.RemoveLocalCallback("test");
 /// <summary>
 /// Initialize the WebView, Navigation will occur when the Source is changed so make sure to set the BaseUrl and ContentType prior.
 /// </summary>
-FormsWebView WebView = new FormsWebView() {
+HybridWebViewControl WebView = new HybridWebViewControl() {
     ContentType = WebContentType.Internet,
     Source = "http://www.somewebsite.com"
 }
@@ -104,7 +107,7 @@ FormsWebView WebView = new FormsWebView() {
 /// If you wish to further modify the native control, then you can bind to these events in your platform specific code.
 /// These events will be called when the control is preparing and ready.
 /// </summary>
-FormsWebViewRenderer.OnControlChanged += ModifyControlAfterReady;
+HybridWebViewRenderer.OnControlChanged += ModifyControlAfterReady;
 ```
 
 ```c#
@@ -156,9 +159,11 @@ To modify the file locations, change the BaseUrl in each platforms renderer
 
 
 ## Feature Requests
-DM me on LinkedIn: http://linkedin.radsrc.com
+
+Create a new issue and  describe detailed.
 
 ## Notes
+
 **For iOS 9 onwards and MacOS, if you wish to access unsecure sites you may need to configure or disable ATS**
 ```
 <key>NSAppTransportSecurity</key>

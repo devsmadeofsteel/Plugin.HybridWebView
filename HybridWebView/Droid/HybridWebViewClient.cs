@@ -151,7 +151,7 @@ namespace Plugin.HybridWebView.Droid
             }
         }
 
-        public async override void OnPageFinished(Android.Webkit.WebView view, string url)
+        public override async void OnPageFinished(Android.Webkit.WebView view, string url)
         {
             if (_reference == null || !_reference.TryGetTarget(out var renderer)) return;
             if (renderer.Element == null) return;

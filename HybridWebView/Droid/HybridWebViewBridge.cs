@@ -18,9 +18,8 @@ namespace Plugin.HybridWebView.Droid
         public void InvokeAction(string data)
         {
             if (_reference == null || !_reference.TryGetTarget(out var renderer)) return;
-            if (renderer.Element == null) return;
 
-            renderer.Element.HandleScriptReceived(data);
+            renderer.Element?.HandleScriptReceived(data);
         }
     }
 }

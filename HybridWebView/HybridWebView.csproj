@@ -30,21 +30,22 @@
     <DebugType>portable</DebugType>
     
     <!--TODO: Fill these in-->
-    <PackageLicenseUrl>LINK TO LICENSE</PackageLicenseUrl>
-    <PackageProjectUrl>LINK TO PROJECT</PackageProjectUrl>
-    <RepositoryUrl>LINK TO PROJECT</RepositoryUrl>
+    <PackageLicenseUrl>https://github.com/devsmadeofsteel/Plugin.HybridWebView/blob/master/LICENCE.md</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/devsmadeofsteel/Plugin.HybridWebView</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/devsmadeofsteel/Plugin.HybridWebView</RepositoryUrl>
     <PackageReleaseNotes>RELEASE NOTES</PackageReleaseNotes>
     <PackageIconUrl>ICON URL</PackageIconUrl>
-    <PackageTags>xamarin, windows, ios, android, xamarin.forms, plugin, HybridWebView</PackageTags>
+    <PackageTags>xamarin, windows, ios, android, xamarin.forms, plugin, HybridWebView, webview</PackageTags>
     
     <Title>HybridWebView Plugin for Xamarin and Windows</Title>
-    <Summary>Summary of nuget</Summary>
-    <Description>Plugin Description</Description>
+    <Summary>Xamarin Plugin for a HybridWebView</Summary>
+    <Description>Lightweight cross platform WebView designed to leverage the native WebView components in Android, iOS, and Windows to provide enhanced functionality over the base control.</Description>
     
     
-    <Owners>YOU</Owners>
-    <Authors>YOU</Authors>
+    <Owners>Vinicius Dutra</Owners>
+    <Authors>Ryan Dixon, Vinicius Dutra</Authors>
     <Copyright>Copyright 2018</Copyright>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)'=='Debug' ">
