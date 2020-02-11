@@ -15,7 +15,7 @@ using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
 
-namespace SampleApp.UWP
+namespace SampleApp.WinUniversalPlataform
 {
     public sealed partial class MainPage
     {

@@ -5,13 +5,13 @@ VisualStudioVersion = 16.0.29409.12
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HybridWebView", "HybridWebView\HybridWebView.csproj", "{868B22CE-27A1-4104-9618-FF55B298012E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleApp", "SampleApp\SampleApp\SampleApp.csproj", "{F70BF7D2-9E52-41BF-8DE3-E2A740501C2D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SampleApp", "SampleApp\SampleApp\SampleApp.csproj", "{F70BF7D2-9E52-41BF-8DE3-E2A740501C2D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleApp.Android", "SampleApp\SampleApp.Android\SampleApp.Android.csproj", "{F82ED1FD-7EE7-44AF-ABC6-690FC3BA9F6F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleApp.iOS", "SampleApp\SampleApp.iOS\SampleApp.iOS.csproj", "{2E70A9BB-1515-4881-8675-D8CFEAF5BE57}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleApp.UWP", "SampleApp\SampleApp.UWP\SampleApp.UWP.csproj", "{D9D26A8B-BAB8-4902-9F6E-2734F5BB6D7D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleApp.WinUniversalPlataform", "SampleApp\SampleApp.UWP\SampleApp.WinUniversalPlataform.csproj", "{D9D26A8B-BAB8-4902-9F6E-2734F5BB6D7D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SampleUsageApp", "SampleUsageApp", "{0A5A15C4-AE0C-4872-B0AC-7D466F54D52A}"
 EndProject

@@ -16,7 +16,7 @@ using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
 using Plugin.HybridWebView.UWP;
 
-namespace SampleApp.UWP
+namespace SampleApp.WinUniversalPlataform
 {
     /// <summary>
     /// Provides application-specific behavior to supplement the default Application class.
