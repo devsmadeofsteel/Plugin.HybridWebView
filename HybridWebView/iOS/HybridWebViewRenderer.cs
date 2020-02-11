@@ -140,13 +140,14 @@ namespace Plugin.HybridWebView.iOS
                 await store.DeleteCookieAsync(c);
             }
 
-            var url = new Uri(Element.Source);
-            var sharedCookies = NSHttpCookieStorage.SharedStorage.CookiesForUrl(url);
-            foreach (var c in sharedCookies)
+            if (Uri.TryCreate(Element.Source, UriKind.RelativeOrAbsolute, out var url))
             {
-                NSHttpCookieStorage.SharedStorage.DeleteCookie(c);
+                var sharedCookies = NSHttpCookieStorage.SharedStorage.CookiesForUrl(url);
+                foreach (var c in sharedCookies)
+                {
+                    NSHttpCookieStorage.SharedStorage.DeleteCookie(c);
+                }
             }
-
         }
 
         private async Task<string> OnSetCookieRequestAsync(Cookie cookie)
@@ -214,7 +215,7 @@ namespace Plugin.HybridWebView.iOS
 
         private async Task<string> OnGetCookieRequestAsync(string key)
         {
-            if (Control == null || Element == null) return string.Empty;
+            if (Control?.Url == null || Element == null) return string.Empty;
             var url = Control.Url;
             var toReturn = string.Empty;
 

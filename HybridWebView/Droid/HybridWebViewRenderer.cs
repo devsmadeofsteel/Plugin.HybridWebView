@@ -63,6 +63,20 @@ namespace Plugin.HybridWebView.Droid
                     Control.Settings.UseWideViewPort = true;
                 }
             }
+
+            if (Control != null)
+            {
+                if (Build.VERSION.SdkInt >= BuildVersionCodes.Kitkat)
+                {
+                    // chromium, enable hardware acceleration
+                    Control.SetLayerType(Android.Views.LayerType.Hardware, null);
+                }
+                else
+                {
+                    // older android version, disable hardware acceleration
+                    Control.SetLayerType(Android.Views.LayerType.Software, null);
+                }
+            }
         }
 
         private void SetupElement(HybridWebViewControl element)
