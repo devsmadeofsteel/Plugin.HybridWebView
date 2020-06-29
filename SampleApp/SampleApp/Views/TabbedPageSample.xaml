@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<TabbedPage xmlns="http://xamarin.com/schemas/2014/forms"
+            xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+            xmlns:webview="clr-namespace:Plugin.HybridWebView.Shared;assembly=Plugin.HybridWebView"
+            x:Class="SampleApp.Views.TabbedPageSample">
+    <ContentPage Title="WebView">
+        <webview:HybridWebViewControl
+        x:Name="internetContent"
+        ContentType="Internet"
+        Source="https://www.xamarin.com" />
+    </ContentPage>
+    <ContentPage Title="Page 2">
+        <Label Text="Other Page 2"/>
+    </ContentPage>
+    <ContentPage Title="Page 3">
+        <Label Text="Other Page 3"/>
+    </ContentPage>
+    <ContentPage Title="Page 4">
+        <Label Text="Other Page 4"/>
+    </ContentPage>
+    <ContentPage Title="Page 5">
+        <Label Text="Other Page 5"/>
+    </ContentPage>
+</TabbedPage>
