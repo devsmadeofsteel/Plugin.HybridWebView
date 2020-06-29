@@ -445,7 +445,10 @@ namespace Plugin.HybridWebView.Droid
         {
             Device.BeginInvokeOnMainThread(() =>
             {
-                Element.CurrentUrl = e.Uri;
+                if (Element != null)
+                {
+                    Element.CurrentUrl = e.Uri;
+                }
             });
         }
 
