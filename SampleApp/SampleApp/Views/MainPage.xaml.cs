@@ -178,6 +178,13 @@ namespace SampleApp.Views
                 Title = "Current URL",
                 Detail = "Bind to the current URL property"
             });
+
+            Items.Add(new SelectionItem()
+            {
+                Identifier = 23,
+                Title = "Tabbed Page",
+                Detail = "Loads a Tabbed Page with several Tabs"
+            });
         }
 
         async void OnItemSelected(object sender, SelectedItemChangedEventArgs e)
@@ -273,9 +280,15 @@ namespace SampleApp.Views
                 case 21:
                     await ((NavigationPage)Application.Current.MainPage).PushAsync(new ClearCookieSample());
                     break;
+
                 case 22:
                     await ((NavigationPage)Application.Current.MainPage).PushAsync(new CurrentUrlSample());
                     break;
+
+                case 23:
+                    await ((NavigationPage)Application.Current.MainPage).PushAsync(new TabbedPageSample());
+                    break;
+
                 default:
                     break;
             }
