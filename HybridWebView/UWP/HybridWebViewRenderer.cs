@@ -1,9 +1,11 @@
-﻿using Plugin.HybridWebView.Shared;
+using Plugin.HybridWebView.Shared;
 using Plugin.HybridWebView.Shared.Enumerations;
 using Plugin.HybridWebView.UWP;
 using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading.Tasks;
 using Windows.Security.Cryptography.Certificates;
 using Windows.UI.Xaml.Controls;
@@ -25,6 +27,9 @@ namespace Plugin.HybridWebView.UWP
 
         public static string BaseUrl { get; set; } = "ms-appx:///";
         private LocalFileStreamResolver _resolver;
+
+        [DllImport("urlmon.dll", CharSet = CharSet.Ansi)]
+        private static extern int UrlMkGetSessionOption(int dwOption, StringBuilder pBuffer, int dwBufferLength, out int pdwBufferLength, int dwReserved);
 
         public static void Initialize()
         {
@@ -154,6 +159,20 @@ namespace Plugin.HybridWebView.UWP
             {
                 // Create new request with custom user agent
                 var requestMsg = new Windows.Web.Http.HttpRequestMessage(HttpMethod.Get, args.Uri);
+                if (Element.UserAgentMode != UserAgentMode.Replace)
+                {
+                    var userAgentBuilder = new StringBuilder(256);
+                    UrlMkGetSessionOption(0x10000001, userAgentBuilder, userAgentBuilder.Capacity - 1, out var length, 0);
+                    switch (Element.UserAgentMode)
+                    {
+                        case UserAgentMode.Append:
+                            userAgent = $"{userAgentBuilder} {Element.UserAgent}";
+                            break;
+                        case UserAgentMode.Prepend:
+                            userAgent = $"{Element.UserAgent} {userAgentBuilder}";
+                            break;
+                    }
+                }
                 requestMsg.Headers.Add("User-Agent", userAgent);
                 Control.NavigateWithHttpRequestMessage(requestMsg);
             }

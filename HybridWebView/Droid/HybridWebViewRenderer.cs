@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -22,6 +22,8 @@ namespace Plugin.HybridWebView.Droid
     /// </summary>
     public class HybridWebViewRenderer : ViewRenderer<HybridWebViewControl, Android.Webkit.WebView>
     {
+        private static string defaultUserAgent;
+
         public static string MimeType = "text/html";
 
         public static string EncodingType = "UTF-8";
@@ -133,6 +135,7 @@ namespace Plugin.HybridWebView.Droid
 
             HybridWebViewControl.CallbackAdded += OnCallbackAdded;
             SetNativeControl(webView);
+            defaultUserAgent = Control.Settings.UserAgentString;
             SetUserAgent();
             OnControlChanged?.Invoke(this, webView);
         }
@@ -200,7 +203,7 @@ namespace Plugin.HybridWebView.Droid
                 cookieSyncMngr.StopSync();
                 cookieSyncMngr.Sync();
             }
-            
+
             return Task.CompletedTask;
         }
 
@@ -461,7 +464,18 @@ namespace Plugin.HybridWebView.Droid
         {
             if (Control != null && Element.UserAgent != null && Element.UserAgent.Length > 0)
             {
-                Control.Settings.UserAgentString = Element.UserAgent;
+                switch (Element.UserAgentMode)
+                {
+                    case UserAgentMode.Replace:
+                        Control.Settings.UserAgentString = Element.UserAgent;
+                        break;
+                    case UserAgentMode.Append:
+                        Control.Settings.UserAgentString = $"{defaultUserAgent} {Element.UserAgent}";
+                        break;
+                    case UserAgentMode.Prepend:
+                        Control.Settings.UserAgentString = $"{Element.UserAgent} {defaultUserAgent}";
+                        break;
+                }
             }
         }
     }

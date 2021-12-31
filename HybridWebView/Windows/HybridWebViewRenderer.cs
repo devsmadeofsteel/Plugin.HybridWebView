@@ -22,6 +22,8 @@ namespace Plugin.HybridWebView.Windows
     /// </summary>
     public class HybridWebViewRenderer : ViewRenderer<HybridWebViewControl, WebView2>
     {
+        private static string defaultUserAgent;
+
         public static event EventHandler<WebView2> OnControlChanged;
 
         public static string BaseUrl { get; set; } = "ms-appx:///";
@@ -94,6 +96,7 @@ namespace Plugin.HybridWebView.Windows
             Control.CoreWebView2.WebResourceRequested += OnWebResourceRequested;
             Control.CoreWebView2.DOMContentLoaded += OnDOMContentLoaded;
             Control.CoreWebView2.AddWebResourceRequestedFilter("*", CoreWebView2WebResourceContext.All);
+            defaultUserAgent = Control.CoreWebView2.Settings.UserAgent;
             SetUserAgent();
 
             OnControlChanged?.Invoke(this, control);
@@ -332,7 +335,18 @@ namespace Plugin.HybridWebView.Windows
         {
             if (Control != null && Element.UserAgent != null && Element.UserAgent.Length > 0)
             {
-                Control.CoreWebView2.Settings.UserAgent = Element.UserAgent;
+                switch (Element.UserAgentMode)
+                {
+                    case UserAgentMode.Replace:
+                        Control.CoreWebView2.Settings.UserAgent = Element.UserAgent;
+                        break;
+                    case UserAgentMode.Append:
+                        Control.CoreWebView2.Settings.UserAgent = $"{defaultUserAgent} {Element.UserAgent}";
+                        break;
+                    case UserAgentMode.Prepend:
+                        Control.CoreWebView2.Settings.UserAgent = $"{Element.UserAgent} {defaultUserAgent}";
+                        break;
+                }
             }
         }
     }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Plugin.HybridWebView.Shared.Enumerations;
 using Xamarin.Forms;
@@ -75,6 +75,12 @@ namespace Plugin.HybridWebView.Shared
         /// </summary>
         public static readonly BindableProperty UserAgentProperty =
             BindableProperty.Create(nameof(UserAgent), typeof(string), typeof(HybridWebViewControl), "");
+
+        /// <summary>
+        /// A bindable property for the UserAgentMode property.
+        /// </summary>
+        public static readonly BindableProperty UserAgentModeProperty =
+            BindableProperty.Create(nameof(UserAgentMode), typeof(UserAgentMode), typeof(HybridWebViewControl), Shared.Enumerations.UserAgentMode.Replace);
 
         /// <summary>
         /// A dictionary used to add headers which are used throughout all instances of FormsWebView.

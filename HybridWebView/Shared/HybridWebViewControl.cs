@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -197,6 +197,22 @@ namespace Plugin.HybridWebView.Shared
                     return;
 
                 SetValue(UserAgentProperty, value);
+                OnUserAgentChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+
+        /// <summary>
+        /// Bindable property to control the user agent mode
+        /// </summary>
+        public UserAgentMode UserAgentMode
+        {
+            get => (UserAgentMode)GetValue(UserAgentModeProperty);
+            set
+            {
+                if (UserAgentMode == value)
+                    return;
+
+                SetValue(UserAgentModeProperty, value);
                 OnUserAgentChanged?.Invoke(this, EventArgs.Empty);
             }
         }

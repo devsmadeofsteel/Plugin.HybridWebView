@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.ComponentModel;
 using System.IO;
 using System.Threading.Tasks;
@@ -16,6 +16,8 @@ namespace Plugin.HybridWebView.macOS
 {
     public class HybridWebViewRenderer : ViewRenderer<HybridWebViewControl, WKWebView>, IWKScriptMessageHandler, IWKUIDelegate
     {
+        private static string defaultUserAgent;
+
         public static event EventHandler<WKWebView> OnControlChanged;
 
         public static string BaseUrl { get; set; } = NSBundle.MainBundle.ResourcePath;
@@ -98,6 +100,7 @@ namespace Plugin.HybridWebView.macOS
             HybridWebViewControl.CallbackAdded += OnCallbackAdded;
 
             SetNativeControl(wkWebView);
+            defaultUserAgent = Control.CustomUserAgent;
             SetUserAgent();
             OnControlChanged?.Invoke(this, wkWebView);
         }
@@ -351,7 +354,18 @@ namespace Plugin.HybridWebView.macOS
         {
             if (Control != null && Element.UserAgent != null && Element.UserAgent.Length > 0)
             {
-                Control.CustomUserAgent = Element.UserAgent;
+                switch (Element.UserAgentMode)
+                {
+                    case UserAgentMode.Replace:
+                        Control.CustomUserAgent = Element.UserAgent;
+                        break;
+                    case UserAgentMode.Append:
+                        Control.CustomUserAgent = $"{defaultUserAgent} {Element.UserAgent}";
+                        break;
+                    case UserAgentMode.Prepend:
+                        Control.CustomUserAgent = $"{Element.UserAgent} {defaultUserAgent}";
+                        break;
+                }
             }
         }
     }
