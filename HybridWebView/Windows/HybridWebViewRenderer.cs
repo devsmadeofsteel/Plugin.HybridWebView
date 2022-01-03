@@ -220,13 +220,8 @@ namespace Plugin.HybridWebView.Windows
             if (Control == null || Element == null)
                 return Task.CompletedTask;
 
-            var url = new Uri(Element.Source);
-            var filter = new HttpBaseProtocolFilter();
-            var cookieManager = filter.CookieManager;
-            var cookieCollection = cookieManager.GetCookies(url);
-
-            foreach (var currentCookie in cookieCollection)
-                cookieManager.DeleteCookie(currentCookie);
+            var cookieManager = Control.CoreWebView2.CookieManager;
+            cookieManager.DeleteAllCookies();
 
             return Task.CompletedTask;
         }
@@ -235,15 +230,12 @@ namespace Plugin.HybridWebView.Windows
         {
             if (Control == null || Element == null)
                 return Task.FromResult(String.Empty);
-            var domain = (new Uri(Element.Source)).Host;
+
+            var cookieManager = Control.CoreWebView2.CookieManager;
+            var cookieList = await cookieManager.GetCookiesAsync(Element.Source);
+
             var cookie = String.Empty;
-            var url = new Uri(Element.Source);
-
-            var filter = new HttpBaseProtocolFilter();
-            var cookieManager = filter.CookieManager;
-            var cookieCollection = cookieManager.GetCookies(url);
-
-            foreach (var currentCookie in cookieCollection)
+            foreach (var currentCookie in cookieList)
             {
                 cookie += currentCookie.Name + "=" + currentCookie.Value + "; ";
             }
@@ -260,14 +252,12 @@ namespace Plugin.HybridWebView.Windows
         {
             if (Control == null || Element == null)
                 return Task.FromResult(String.Empty);
-            var url = new Uri(Element.Source);
+
+            var cookieManager = Control.CoreWebView2.CookieManager;
+            var cookieList = await cookieManager.GetCookiesAsync(Element.Source);
+
             var cookie = String.Empty;
-
-            var filter = new HttpBaseProtocolFilter();
-            var cookieManager = filter.CookieManager;
-            var cookieCollection = cookieManager.GetCookies(url);
-
-            foreach (var currentCookie in cookieCollection)
+            foreach (var currentCookie in cookieList)
             {
                 if (key == currentCookie.Name)
                 {
@@ -283,14 +273,13 @@ namespace Plugin.HybridWebView.Windows
         {
             if (Control == null || Element == null)
                 return Task.FromResult(String.Empty);
-            var newCookie = new HttpCookie(cookie.Name, cookie.Domain, cookie.Path) { Value = cookie.Value, HttpOnly = cookie.HttpOnly, Secure = cookie.Secure, Expires = cookie.Expires };
-
-            var filter = new HttpBaseProtocolFilter();
-            filter.IgnorableServerCertificateErrors.Add(ChainValidationResult.Untrusted);
-            filter.IgnorableServerCertificateErrors.Add(ChainValidationResult.Expired);
-            filter.CookieManager.SetCookie(newCookie);
-            return OnGetCookieRequestAsync(cookie.Name);
-
+            var cookieManager = Control.CoreWebView2.CookieManager;
+            var webViewCookie = cookieManager.CreateCookie(cookie.Name, cookie.Value, cookie.Domain, cookie.Path);
+            webViewCookie.IsHttpOnly = cookie.HttpOnly;
+            webViewCookie.IsSecure = cookie.Secure;
+            webViewCookie.Expires = new DateTimeOffset(cookie.Expires).ToUnixTimeSeconds();
+            cookieManager.AddOrUpdateCookie(webViewCookie);
+            return OnGetCookieRequestAsync(webViewCookie.Name);
         }
 
         private async Task<string> OnJavascriptInjectionRequestAsync(string js)
