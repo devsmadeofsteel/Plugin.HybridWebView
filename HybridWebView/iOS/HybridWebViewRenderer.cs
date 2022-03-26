@@ -91,9 +91,9 @@ namespace Plugin.HybridWebView.iOS
             _configuration = new WKWebViewConfiguration
             {
                 UserContentController = _contentController,
-                AllowsInlineMediaPlayback = true
+                AllowsInlineMediaPlayback = true,
+                MediaPlaybackRequiresUserAction = !Element.AllowMediaAutoplay
             };
-
 
             var wkWebView = new WKWebView(Frame, _configuration)
             {
@@ -124,6 +124,9 @@ namespace Plugin.HybridWebView.iOS
             {
                 case "Source":
                     SetSource();
+                    break;
+                case "MediaAutoplay":
+                    SetMediaAutoplay();
                     break;
             }
         }
@@ -275,6 +278,13 @@ namespace Plugin.HybridWebView.iOS
                     LoadStringData();
                     break;
             }
+        }
+
+        private void SetMediaAutoplay()
+        {
+            if (Element == null || Control == null || _configuration == null) return;
+            _configuration.MediaPlaybackRequiresUserAction = !Element.AllowMediaAutoplay;
+            _configuration.MediaTypesRequiringUserActionForPlayback = Element.AllowMediaAutoplay ? WKAudiovisualMediaTypes.None : WKAudiovisualMediaTypes.All;
         }
 
         private void LoadStringData()

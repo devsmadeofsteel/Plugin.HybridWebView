@@ -201,6 +201,15 @@ namespace Plugin.HybridWebView.Shared
             }
         }
 
+        /// <summary>
+        /// Allow media in autoplay mode
+        /// </summary>
+        public bool AllowMediaAutoplay
+        {
+            get => (bool)GetValue(MediaAutoplayProperty);
+            set => SetValue(MediaAutoplayProperty, value);
+        }
+
         public HybridWebViewControl()
         {
             HorizontalOptions = VerticalOptions = LayoutOptions.FillAndExpand;

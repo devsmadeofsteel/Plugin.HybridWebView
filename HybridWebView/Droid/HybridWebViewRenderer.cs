@@ -59,8 +59,10 @@ namespace Plugin.HybridWebView.Droid
             {
                 if (Control != null)
                 {
+                    Control.Settings.MediaPlaybackRequiresUserGesture = false;
                     Control.Settings.LoadWithOverviewMode = true;
                     Control.Settings.UseWideViewPort = true;
+                    Control.Settings.MediaPlaybackRequiresUserGesture = !Element.AllowMediaAutoplay;
                 }
             }
 
@@ -176,6 +178,9 @@ namespace Plugin.HybridWebView.Droid
                 case nameof(HybridWebViewControl.AllowUniversalAccessFromFileURLs):
                     if (Control != null && Element != null)
                         Control.Settings.AllowUniversalAccessFromFileURLs = Element.AllowUniversalAccessFromFileURLs;
+                    break;
+                case "MediaAutoplay":
+                    SetMediaAutoplay();
                     break;
             }
         }
@@ -393,6 +398,12 @@ namespace Plugin.HybridWebView.Droid
             }
 
             SetCurrentUrl();
+        }
+
+        private void SetMediaAutoplay()
+        {
+            if (Element == null || Control == null || Control.Settings != null) return;
+            Control.Settings.MediaPlaybackRequiresUserGesture = !Element.AllowMediaAutoplay;
         }
 
         private void LoadFromString()

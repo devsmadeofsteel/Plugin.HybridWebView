@@ -85,7 +85,8 @@ namespace Plugin.HybridWebView.macOS
             _contentController.AddScriptMessageHandler(this, "invokeAction");
             _configuration = new WKWebViewConfiguration
             {
-                UserContentController = _contentController
+                UserContentController = _contentController,
+                MediaTypesRequiringUserActionForPlayback = Element.AllowMediaAutoplay ? WKAudiovisualMediaTypes.None : WKAudiovisualMediaTypes.All,
             };
 
             var wkWebView = new WKWebView(Frame, _configuration)
@@ -117,6 +118,9 @@ namespace Plugin.HybridWebView.macOS
             {
                 case "Source":
                     SetSource();
+                    break;
+                case "MediaAutoplay":
+                    SetMediaAutoplay();
                     break;
             }
         }
@@ -267,6 +271,11 @@ namespace Plugin.HybridWebView.macOS
                     LoadStringData();
                     break;
             }
+        }
+        private void SetMediaAutoplay()
+        {
+            if (Element == null || Control == null || Control.Configuration == null || _configuration == null) return;
+            _configuration.MediaTypesRequiringUserActionForPlayback = Element.AllowMediaAutoplay ? WKAudiovisualMediaTypes.None : WKAudiovisualMediaTypes.All;
         }
 
         private void LoadStringData()

@@ -77,6 +77,12 @@ namespace Plugin.HybridWebView.Shared
             BindableProperty.Create(nameof(UserAgent), typeof(string), typeof(HybridWebViewControl), "");
 
         /// <summary>
+        /// A bindable property for the MediaAutoplayProperty property.
+        /// </summary>
+        public static readonly BindableProperty MediaAutoplayProperty =
+            BindableProperty.Create(nameof(AllowMediaAutoplay), typeof(bool), typeof(HybridWebViewControl), false);
+
+        /// <summary>
         /// A dictionary used to add headers which are used throughout all instances of FormsWebView.
         /// </summary>
         public readonly static Dictionary<string, string> GlobalRegisteredHeaders = new Dictionary<string, string>();
