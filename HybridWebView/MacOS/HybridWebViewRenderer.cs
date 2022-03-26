@@ -119,7 +119,7 @@ namespace Plugin.HybridWebView.macOS
                 case "Source":
                     SetSource();
                     break;
-                case "MediaAutoplay":
+                case "AllowMediaAutoplay":
                     SetMediaAutoplay();
                     break;
             }
@@ -274,7 +274,7 @@ namespace Plugin.HybridWebView.macOS
         }
         private void SetMediaAutoplay()
         {
-            if (Element == null || Control == null || Control.Configuration == null || _configuration == null) return;
+            if (Element == null || _configuration == null) return;
             _configuration.MediaTypesRequiringUserActionForPlayback = Element.AllowMediaAutoplay ? WKAudiovisualMediaTypes.None : WKAudiovisualMediaTypes.All;
         }
 
