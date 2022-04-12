@@ -282,7 +282,16 @@ namespace Plugin.HybridWebView.iOS
             if (Control == null || Element == null) return;
 
             var nsBaseUri = new NSUrl($"file://{Element.BaseUrl ?? BaseUrl}");
-            Control.LoadHtmlString(Element.Source, nsBaseUri);
+            try
+            {
+                string iOSHtmlWithScaling = Element.Source.Insert(0,
+                    "<meta name='viewport' content='width=device-width,initial-scale=1,maximum-scale=1' />");
+                Control.LoadHtmlString(iOSHtmlWithScaling, nsBaseUri);
+            }
+            catch (Exception ex)
+            {
+                Control.LoadHtmlString(Element.Source, nsBaseUri);
+            }
         }
 
         private void LoadLocalFile()
