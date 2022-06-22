@@ -59,7 +59,7 @@
 
   <ItemGroup>
     <Compile Include="Shared\**\*.cs" />
-    <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="Xamarin.Forms" Version="2.4.0.280" />
   </ItemGroup>
 
